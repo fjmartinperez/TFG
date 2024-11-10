@@ -10,8 +10,8 @@
       uri:
         url: "{{ servicenow_instance }}/api/now/table/incident"
         method: GET
-        user: "{{ lookup('ansible.builtin.env', 'SERVICENOW_USERNAME') }}"
-        password: "{{ lookup('ansible.builtin.env', 'SERVICENOW_PASSWORD') }}"
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
         force_basic_auth: yes
         status_code: 200
         validate_certs: no
