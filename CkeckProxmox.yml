@@ -1,17 +1,15 @@
-- name: Probar módulo Proxmox
+- name: Probar API de Proxmox con módulo uri
   hosts: localhost
   tasks:
     - name: Listar nodos en Proxmox
-      community.general.proxmox:
-        api_host: "https://192.168.0.10:8006"
-        api_user: "root@pam"
-        api_password: "206xs75"
+      uri:
+        url: "https://192.168.0.10:8006/api2/json/nodes"
+        method: GET
+        user: "root@pam"
+        password: "206xs75"
         validate_certs: false
-        endpoint: "/nodes"
-        method: "GET"
-        state: "info"  # Cambiar "state" para solicitudes de información
       register: result
 
     - name: Mostrar resultados
       debug:
-        var: result
+        var: result.json
