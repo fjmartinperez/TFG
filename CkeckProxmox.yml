@@ -8,7 +8,8 @@
         api_password: "206xs75"
         validate_certs: false
         endpoint: "/nodes"
-        method: GET
+        method: "GET"
+        state: "info"  # Cambiar "state" para solicitudes de información
       register: result
 
     - name: Mostrar resultados
