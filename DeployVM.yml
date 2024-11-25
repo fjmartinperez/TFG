@@ -7,14 +7,15 @@
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') }}"
-        node: "proxmox2"            # Nodo donde se encuentra la plantilla
-        clone: 106   # Nombre o ID de la plantilla
+        node: "proxmox2"            # Nodo donde está la plantilla
+        clone: 106                  # ID de la plantilla existente
         vmid: 200                   # ID único para la nueva VM
-        name: "Almalinuxdeployed"         # Nombre de la nueva VM
+        name: "Almalinuxdeployed"   # Nombre de la nueva VM
+        hostname: "Almalinuxdeployed" # Nombre del host (importante)
         target: "proxmox2"          # Nodo donde se creará la nueva VM
-        full: true                  # Clon completo (true) o vinculado (false)
-        pool: "Ansibledeployed"             # (Opcional) Pool donde se asignará la VM
-        storage: "nvme"        # Almacenamiento donde se ubicará el disco
+        full: true                  # Clon completo
+        pool: "Ansibledeployed"     # Pool donde se asignará la VM
+        storage: "nvme"             # Almacenamiento para el disco
         cores: 2                    # Número de núcleos de CPU
         memory: 2048                # Memoria RAM en MB
         state: present
