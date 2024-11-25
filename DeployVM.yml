@@ -1,30 +1,25 @@
-- name: Desplegar VM en Proxmox
+- name: Desplegar VM en Proxmox desde plantilla
   hosts: localhost
   tasks:
-    - name: Crear VM en Proxmox
+    - name: Crear VM en Proxmox desde plantilla
       community.general.proxmox:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') }}"
-        node: proxmox2               # Nombre del nodo donde se desplegará la VM
-        vmid: 200                   # ID único para la VM
-        name: test-vm               # Nombre de la VM
-        cores: 1                    # Número de núcleos de CPU
+        node: "proxmox2"            # Nodo donde se encuentra la plantilla
+        clone: "Almalinux"   # Nombre o ID de la plantilla
+        vmid: 200                   # ID único para la nueva VM
+        name: "Almalinuxdeployed"         # Nombre de la nueva VM
+        target: "proxmox2"          # Nodo donde se creará la nueva VM
+        full: true                  # Clon completo (true) o vinculado (false)
+        pool: "Ansibledeployed"             # (Opcional) Pool donde se asignará la VM
+        storage: "nvme"        # Almacenamiento donde se ubicará el disco
+        cores: 2                    # Número de núcleos de CPU
         memory: 2048                # Memoria RAM en MB
-        disk: 10                    # Tamaño del disco en GB
-        storage: nvme          # Almacenamiento donde se desplegará
-        netif:
-          - model: virtio
-            bridge: vmbr0           # Interfaz de red del host
-            #macaddr: "52:54:00:12:34:56" # Opcional: MAC Address
-        ostemplate: "local:vztmpl/debian-11-standard_11.7-1_amd64.tar.zst" # Plantilla de SO
-        pool: "ansible_deploy"      # Opcional: Grupo al que pertenece la VM
-        password: "supersecret"     # Contraseña para el usuario root en la VM
-        onboot: true                # Habilitar inicio automático
-        state: present              # Asegurar que la VM esté creada
+        state: present
       register: result
 
-    - name: Mostrar resultado
+    - name: Mostrar resultados
       debug:
         var: result
