@@ -1,16 +1,30 @@
-- name: Probar conexión a Proxmox
+- name: Desplegar VM en Proxmox
   hosts: localhost
   tasks:
-    - name: Listar nodos en Proxmox
+    - name: Crear VM en Proxmox
       community.general.proxmox:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') }}"
-        endpoint: "/nodes"
-        method: GET
+        node: proxmox2               # Nombre del nodo donde se desplegará la VM
+        vmid: 200                   # ID único para la VM
+        name: test-vm               # Nombre de la VM
+        cores: 1                    # Número de núcleos de CPU
+        memory: 2048                # Memoria RAM en MB
+        disk: 10                    # Tamaño del disco en GB
+        storage: nvme          # Almacenamiento donde se desplegará
+        netif:
+          - model: virtio
+            bridge: vmbr0           # Interfaz de red del host
+            #macaddr: "52:54:00:12:34:56" # Opcional: MAC Address
+        ostemplate: "local:vztmpl/debian-11-standard_11.7-1_amd64.tar.zst" # Plantilla de SO
+        pool: "ansible_deploy"      # Opcional: Grupo al que pertenece la VM
+        password: "supersecret"     # Contraseña para el usuario root en la VM
+        onboot: true                # Habilitar inicio automático
+        state: present              # Asegurar que la VM esté creada
       register: result
 
-    - debug:
+    - name: Mostrar resultado
+      debug:
         var: result
-
