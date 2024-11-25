@@ -8,7 +8,7 @@
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') }}"
         node: "proxmox2"            # Nodo donde se encuentra la plantilla
-        clone: "Almalinux"   # Nombre o ID de la plantilla
+        clone: 106   # Nombre o ID de la plantilla
         vmid: 200                   # ID único para la nueva VM
         name: "Almalinuxdeployed"         # Nombre de la nueva VM
         target: "proxmox2"          # Nodo donde se creará la nueva VM
