@@ -54,8 +54,7 @@
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
         node: "proxmox2"
-        vmid: "{{ new_vmid }}"
-        state: current
+        vmid: "{{ new_vmid }}"        
       register: vm_info
 
     - name: Establecer la IP de la máquina clonada
