@@ -1,4 +1,4 @@
-- name: Clonar una VM desde una plantilla en Proxmox
+- name: Clonar una VM desde una plantilla en Proxmox y encenderla
   hosts: localhost
   tasks:
     - name: Clonar VM desde plantilla
@@ -6,11 +6,11 @@
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
-        validate_certs: false          
+        validate_certs: false
         node: "proxmox2"               # Nodo donde reside la plantilla
         clone: Almalinux               # Nombre de la plantilla a clonar
         vmid: 106                      # ID de la plantilla existente        
-        name: newdeploy                # Nombre
+        name: newdeploy                # Nombre inicial
         storage: "nvme"                # Almacenamiento para la VM        
         full: true                     # Clonación completa
         timeout: 240                   # Tiempo de espera
@@ -27,14 +27,25 @@
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
         node: "proxmox2"
-        vmid: "{{ new_vmid }}"     # ID de la VM clonada
-        name: "server{{ new_vmid }}" # Nombre final basado en VMID
-        update: true              # Actualizar la configuración
+        vmid: "{{ new_vmid }}"         # ID de la VM clonada
+        name: "server{{ new_vmid }}"   # Nombre final basado en VMID
+        update: true                   # Actualizar la configuración
         state: present
       register: update_result
 
-    - name: Mostrar resultados del clon y renombrado
+    - name: Encender la máquina virtual
+      community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}"         # ID de la VM clonada
+        state: started                 # Encender la máquina
+
+    - name: Mostrar resultados del clon, renombrado y encendido
       debug:
         msg:
           - "Clonación realizada con VMID: {{ new_vmid }}"
           - "VM renombrada a: server{{ new_vmid }}"
+          - "La VM con VMID {{ new_vmid }} ha sido encendida"
