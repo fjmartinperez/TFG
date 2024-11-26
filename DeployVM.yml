@@ -29,7 +29,7 @@
         validate_certs: false
         vmid: "{{ new_vmid }}"     # ID de la VM clonada
         name: "server{{ new_vmid }}" # Nombre final basado en VMID
-        state: update              # Actualizar la configuración
+        update: true              # Actualizar la configuración
       register: update_result
 
     - name: Mostrar resultados del clon y renombrado
