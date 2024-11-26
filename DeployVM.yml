@@ -2,7 +2,7 @@
   hosts: localhost
   tasks:
     - name: Crear VM en Proxmox desde plantilla
-      community.general.proxmox:
+      community.general.proxmox_kvm:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         #api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         #api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
@@ -11,15 +11,14 @@
         #api_token_id: "{{ lookup('env', 'PROXMOX_API_TOKEN_ID') }}"
         #api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') }}"
         validate_certs: "{{ lookup('env', 'PROXMOX_VALIDATE_CERTS') }}"
-        node: "proxmox2"            # Nodo donde está la plantilla
-        clone: 103                  # ID de la plantilla existente
-        vmid: 200                   # ID único para la nueva VM
-        hostname: "Almalinuxdeployed" # Nombre del host (importante)
-        pool: "Ansibledeployed"     # Pool donde se asignará la VM
-        storage: "nvme"             # Almacenamiento para el disco
-        cores: 2                    # Número de núcleos de CPU
-        memory: 2048                # Memoria RAM en MB
-        state: present
+        node: proxmox2            # Nodo donde está la plantilla
+        clone: Almalinuxdeployed    # Nuevo nombre
+        vmid: 106                   # ID a clonar
+        newid: 200                  # ID Nueva máquina        
+        storage: nvme             # Almacenamiento para el disco
+        #cores: 2                    # Número de núcleos de CPU
+        #memory: 2048                # Memoria RAM en MB
+        #state: present
       register: result      
 
     - name: Mostrar resultados
