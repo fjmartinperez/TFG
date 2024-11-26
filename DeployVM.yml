@@ -6,18 +6,34 @@
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
-        validate_certs: false          # Validación de certificados SSL
+        validate_certs: false          
         node: "proxmox2"               # Nodo donde reside la plantilla
-        clone: Almalinux
-        vmid: 106                     # ID de la plantilla existente
-        #newid: 200
-        name: "{{ vm_name }}"                     # ID de la nueva VM
-        storage: "nvme"                # Almacenamiento para la VM
-        #state: present                 # Crear la VM
+        clone: Almalinux               # Nombre de la plantilla a clonar
+        vmid: 106                      # ID de la plantilla existente        
+        name: newdeploy                # Nombre
+        storage: "nvme"                # Almacenamiento para la VM        
         full: true                     # Clonación completa
         timeout: 240                   # Tiempo de espera
-      register: result      
+      register: clone_result      
 
-    - name: Mostrar resultados
+    - name: Obtener el VMID del resultado
+      set_fact:
+        new_vmid: "{{ clone_result.vmid }}"
+
+    - name: Cambiar el nombre de la VM al finalizar
+      community.general.proxmox_kvm:
+        community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        vmid: "{{ new_vmid }}"     # ID de la VM clonada
+        name: "server{{ new_vmid }}" # Nombre final basado en VMID
+        state: update              # Actualizar la configuración
+      register: update_result
+
+    - name: Mostrar resultados del clon y renombrado
       debug:
-        var: result
+        msg:
+          - "Clonación realizada con VMID: {{ new_vmid }}"
+          - "VM renombrada a: server{{ new_vmid }}"
