@@ -3,9 +3,9 @@
   tasks:
     - name: Clonar VM desde plantilla
       community.general.proxmox_kvm:
-        api_host: "192.168.0.10"       # Dirección del servidor Proxmox
-        api_user: "root@pam"           # Usuario con permisos
-        api_password: "206xs75"    # Contraseña del usuario
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false          # Validación de certificados SSL
         node: "proxmox2"               # Nodo donde reside la plantilla
         clone: Almalinux
