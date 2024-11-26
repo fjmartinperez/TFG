@@ -47,13 +47,28 @@
       pause:
         minutes: 1
 
+    - name: Obtener la información de red de la máquina
+      community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}"
+        state: current
+      register: vm_info
+
+    - name: Establecer la IP de la máquina clonada
+      set_fact:
+        server_ip: "{{ vm_info.instance.network.interfaces[0].ip_addresses[0] }}"
+
     - name: Cambiar el nombre de la máquina a nivel de SO
       ansible.builtin.shell: |
         hostnamectl set-hostname server{{ new_vmid }}
       vars:
         ansible_user: "{{ lookup('env', 'USERNAME') }}"
         ansible_ssh_pass: "{{ lookup('env', 'PASSWORD') }}"
-      delegate_to: "server{{ new_vmid }}"
+      delegate_to: "{{ server_ip }}"
       become: yes
 
     - name: Mostrar resultados del clon, renombrado y encendido
@@ -62,3 +77,4 @@
           - "Clonación realizada con VMID: {{ new_vmid }}"
           - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
           - "Nombre del SO cambiado a: server{{ new_vmid }}"
+          - "Dirección IP de la máquina: {{ server_ip }}"
