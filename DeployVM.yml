@@ -43,9 +43,22 @@
         vmid: "{{ new_vmid }}"         # ID de la VM clonada
         state: started                 # Encender la máquina
 
+    - name: Esperar 1 minuto a que la VM arranque
+      pause:
+        minutes: 1
+
+    - name: Cambiar el nombre de la máquina a nivel de SO
+      ansible.builtin.shell: |
+        hostnamectl set-hostname server{{ new_vmid }}
+      vars:
+        ansible_user: "{{ lookup('env', 'USERNAME') }}"
+        ansible_ssh_pass: "{{ lookup('env', 'PASSWORD') }}"
+      delegate_to: "server{{ new_vmid }}"
+      become: yes
+
     - name: Mostrar resultados del clon, renombrado y encendido
       debug:
         msg:
           - "Clonación realizada con VMID: {{ new_vmid }}"
-          - "VM renombrada a: server{{ new_vmid }}"
-          - "La VM con VMID {{ new_vmid }} ha sido encendida"
+          - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
+          - "Nombre del SO cambiado a: server{{ new_vmid }}"
