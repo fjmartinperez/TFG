@@ -4,7 +4,7 @@
     - name: Crear VM en Proxmox desde plantilla
       community.general.proxmox:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
-        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        #api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         #api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         api_token_id: "{{ lookup('env', 'PROXMOX_API_TOKEN_ID') }}"
         api_token_secret: "{{ lookup('env', 'PROXMOX_API_TOKEN_SECRET') }}"
@@ -18,7 +18,7 @@
         cores: 2                    # Número de núcleos de CPU
         memory: 2048                # Memoria RAM en MB
         state: present
-      register: result
+      register: result      
 
     - name: Mostrar resultados
       debug:
