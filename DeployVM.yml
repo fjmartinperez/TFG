@@ -1,36 +1,22 @@
-- name: Clonar una VM desde una plantilla en Proxmox al siguiente VMID disponible
+- name: Clonar una VM desde una plantilla en Proxmox
   hosts: localhost
   tasks:
-    - name: Obtener lista de todas las VMs y contenedores
-      community.general.proxmox_kvm:
-        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
-        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
-        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
-        validate_certs: false
-        state: info
-      register: vm_list
-
-    - name: Calcular siguiente VMID disponible
-      set_fact:
-        next_vmid: >-
-          {{ (vm_list.instances | map(attribute='vmid') | map('int') | list | max) + 1 }}
-
     - name: Clonar VM desde plantilla
       community.general.proxmox_kvm:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
-        validate_certs: false
-        node: "proxmox2"
+        validate_certs: false          # Validación de certificados SSL
+        node: "proxmox2"               # Nodo donde reside la plantilla
         clone: Almalinux
-        vmid: 106
-        newid: "{{ next_vmid }}"
-        name: "Almalinuxdeployed-{{ next_vmid }}"
-        storage: "nvme"
-        state: present
-        full: true
-        timeout: 240
-      register: result
+        vmid: 106                     # ID de la plantilla existente
+        #newid: 200
+        name: Almalinuxdeployed                     # ID de la nueva VM
+        storage: "nvme"                # Almacenamiento para la VM
+        state: present                 # Crear la VM
+        full: true                     # Clonación completa
+        timeout: 240                   # Tiempo de espera
+      register: result      
 
     - name: Mostrar resultados
       debug:
