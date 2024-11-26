@@ -15,6 +15,7 @@
         storage: "nvme"                # Almacenamiento para la VM
         state: present                 # Crear la VM
         full: true                     # Clonación completa
+        timeout: 240                   # Tiempo de espera
       register: result      
 
     - name: Mostrar resultados
