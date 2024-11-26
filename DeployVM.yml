@@ -46,24 +46,25 @@
     - name: Esperar 1 minuto a que la VM arranque
       pause:
         minutes: 1
-
-    - name: Obtener la información de red de la máquina
-      community.general.proxmox_vm_info:
-        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
-        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
-        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+    
+    - name: Obtener información de configuración de red a través de la API
+      uri:
+        url: "https://{{ lookup('env', 'PROXMOX_API_HOST') }}/api2/json/nodes/proxmox2/qemu/{{ new_vmid }}/config"
+        method: GET
+        user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        force_basic_auth: true
         validate_certs: false
-        node: "proxmox2"
-        vmid: "{{ new_vmid }}"        
-      register: vm_info
+      register: vm_config
+
+    - name: Mostrar configuración de red
+      debug:
+        var: vm_config
 
     - name: Establecer la IP de la máquina clonada
       set_fact:
-        server_ip: "{{ vm_info.instance.network.interfaces[0].ip_addresses[0] }}"
-
-    - name: Mostrar la información obtenida
-      debug:
-        var: vm_info
+        server_ip: "{{ vm_config.json.network.ipconfig0.split('=')[1].split(',')[0] }}"
+      when: "'ipconfig0' in vm_config.json.network"
 
     - name: Cambiar el nombre de la máquina a nivel de SO
       ansible.builtin.shell: |
