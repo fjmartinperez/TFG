@@ -62,6 +62,10 @@
       set_fact:
         server_ip: "{{ vm_info.instance.network.interfaces[0].ip_addresses[0] }}"
 
+    - name: Mostrar la información obtenida
+      debug:
+        var: vm_info
+
     - name: Cambiar el nombre de la máquina a nivel de SO
       ansible.builtin.shell: |
         hostnamectl set-hostname server{{ new_vmid }}
