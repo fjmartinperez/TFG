@@ -8,7 +8,8 @@
         api_password: "tu_password"    # Contraseña del usuario
         validate_certs: false          # Validación de certificados SSL
         node: "proxmox2"               # Nodo donde reside la plantilla
-        clone: 106                     # ID de la plantilla existente
+        clone: Almalinux
+        vmid: 106                     # ID de la plantilla existente
         newid: 200                     # ID de la nueva VM
         storage: "nvme"                # Almacenamiento para la VM
         state: present                 # Crear la VM
