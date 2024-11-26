@@ -27,6 +27,7 @@
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
+        node: "proxmox2"
         vmid: "{{ new_vmid }}"     # ID de la VM clonada
         name: "server{{ new_vmid }}" # Nombre final basado en VMID
         update: true              # Actualizar la configuración
