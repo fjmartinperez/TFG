@@ -14,6 +14,7 @@
         storage: "nvme"                # Almacenamiento para la VM        
         full: true                     # Clonación completa
         timeout: 240                   # Tiempo de espera
+
       register: clone_result      
 
     - name: Obtener el VMID y la IP desde el resultado
@@ -21,30 +22,9 @@
         new_vmid: "{{ clone_result.vmid }}"
         vm_ip: "192.168.0.{{ clone_result.vmid }}"
 
-    - name: Configurar red usando cloud-init
-      community.general.proxmox_kvm:
-        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
-        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
-        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
-        validate_certs: false
-        node: "proxmox2"
-        vmid: "{{ new_vmid }}"
-        cicustom:
-          network: |
-            version: 2
-            ethernets:
-              ens18:
-                addresses:
-                  - "{{ vm_ip }}/24"
-                gateway4: 192.168.0.1
-                nameservers:
-                  addresses:
-                    - 8.8.8.8
-                    - 8.8.4.4
-        update: true
-        state: present
 
-    - name: Cambiar el nombre de la VM al finalizar
+
+    - name: Cambiar el nombre y la IP de la VM al finalizar
       community.general.proxmox_kvm:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
@@ -53,6 +33,16 @@
         node: "proxmox2"
         vmid: "{{ new_vmid }}"         # ID de la VM clonada
         name: "server{{ new_vmid }}"   # Nombre final basado en VMID
+        net:
+          net0: "virtio,bridge=vmbr0"  # Interfaz de red en modo bridge
+        ipconfig:
+          ipconfig0: "ip=192.168.0.{{ new_vmid }}/24,gw=192.168.0.1" # IP basada en el VMID
+        ciuser: root                   # Usuario de Cloud-Init
+        cipassword: rootpassword       # Contraseña para Cloud-Init
+        nameservers:                   # Servidores DNS
+          - 8.8.8.8
+          - 8.8.4.4
+        searchdomains: "example.com"   # Dominio de búsqueda        
         update: true                   # Actualizar la configuración
         state: present
       register: update_result
