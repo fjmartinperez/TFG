@@ -8,8 +8,8 @@
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
         node: "proxmox2"               # Nodo donde reside la plantilla
-        clone: Almalinux               # Nombre de la plantilla a clonar
-        vmid: 106                      # ID de la plantilla existente        
+        clone: Debian               # Nombre de la plantilla a clonar
+        vmid: 109                      # ID de la plantilla existente        
         name: newdeploy                # Nombre inicial
         storage: "nvme"                # Almacenamiento para la VM        
         full: true                     # Clonación completa
