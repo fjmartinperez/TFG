@@ -16,9 +16,33 @@
         timeout: 240                   # Tiempo de espera
       register: clone_result      
 
-    - name: Obtener el VMID del resultado
+    - name: Obtener el VMID y la IP desde el resultado
       set_fact:
         new_vmid: "{{ clone_result.vmid }}"
+        vm_ip: "192.168.0.{{ clone_result.vmid }}"
+
+    - name: Configurar red usando cloud-init
+      community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}"
+        cicustom:
+          network: |
+            version: 2
+            ethernets:
+              ens18:
+                addresses:
+                  - "{{ vm_ip }}/24"
+                gateway4: 192.168.0.1
+                nameservers:
+                  addresses:
+                    - 8.8.8.8
+                    - 8.8.4.4
+        update: true
+        state: present
 
     - name: Cambiar el nombre de la VM al finalizar
       community.general.proxmox_kvm:
@@ -46,25 +70,6 @@
     - name: Esperar 1 minuto a que la VM arranque
       pause:
         minutes: 1
-    
-    - name: Obtener información de configuración de red a través de la API
-      uri:
-        url: "https://{{ lookup('env', 'PROXMOX_API_HOST') }}/api2/json/nodes/proxmox2/qemu/{{ new_vmid }}/config"
-        method: GET
-        user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
-        password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
-        force_basic_auth: true
-        validate_certs: false
-      register: vm_config
-
-    - name: Mostrar configuración de red
-      debug:
-        var: vm_config
-
-    - name: Establecer la IP de la máquina clonada
-      set_fact:
-        server_ip: "{{ vm_config.json.network.ipconfig0.split('=')[1].split(',')[0] }}"
-      when: "'ipconfig0' in vm_config.json.network"
 
     - name: Cambiar el nombre de la máquina a nivel de SO
       ansible.builtin.shell: |
@@ -72,7 +77,7 @@
       vars:
         ansible_user: "{{ lookup('env', 'USERNAME') }}"
         ansible_ssh_pass: "{{ lookup('env', 'PASSWORD') }}"
-      delegate_to: "{{ server_ip }}"
+      delegate_to: "{{ vm_ip }}"
       become: yes
 
     - name: Mostrar resultados del clon, renombrado y encendido
@@ -81,4 +86,4 @@
           - "Clonación realizada con VMID: {{ new_vmid }}"
           - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
           - "Nombre del SO cambiado a: server{{ new_vmid }}"
-          - "Dirección IP de la máquina: {{ server_ip }}"
+          - "Dirección IP de la máquina: {{ vm_ip }}"
