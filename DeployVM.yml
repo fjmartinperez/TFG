@@ -7,14 +7,14 @@
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
-        node: "proxmox2"               # Nodo donde reside la plantilla
-        clone: AlmalinuxTemplate               # Nombre de la plantilla a clonar
-        vmid: 110                      # ID de la plantilla existente        
-        name: newdeploy                # Nombre inicial
-        storage: "nvme"                # Almacenamiento para la VM        
-        full: true                     # Clonación completa
-        timeout: 240                   # Tiempo de espera
-      register: clone_result      
+        node: "proxmox2"
+        clone: AlmalinuxTemplate
+        vmid: 110
+        name: newdeploy               
+        storage: "nvme"
+        full: true                     
+        timeout: 240                  
+      register: clone_result
 
     - name: Obtener el VMID del resultado
       set_fact:
@@ -54,16 +54,21 @@
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
         node: "proxmox2"
-        vmid: "{{ new_vmid }}" 
-        network: true       
+        vmid: "{{ new_vmid }}"
+        network: true
       register: vm_info
 
-    - name: Establecer la IP de la máquina clonada
-      set_fact:
-        server_ip: "{{ vm_info.instance.network.interfaces[0].ip_addresses[0] }}"
+    - name: Obtener la dirección IP de la interfaz de red ens18
+      ansible.builtin.set_fact:
+        vm_ip: >-
+          {{
+          (vm_info.proxmox_vms[0].network
+          | selectattr('name', 'equalto', 'ens18') | list | first)['ip-addresses']
+          | selectattr('ip-address-type', 'equalto', 'ipv4') | map(attribute='ip-address') | first
+          }}
 
     - name: Mostrar la información obtenida
-      debug:
+      ansible.builtin.debug:
         var: vm_info
 
     - name: Cambiar el nombre de la máquina a nivel de SO
@@ -72,7 +77,7 @@
       vars:
         ansible_user: "{{ lookup('env', 'USERNAME') }}"
         ansible_ssh_pass: "{{ lookup('env', 'PASSWORD') }}"
-      delegate_to: "{{ server_ip }}"
+      delegate_to: "{{ vm_ip }}"
       become: yes
 
     - name: Mostrar resultados del clon, renombrado y encendido
@@ -81,4 +86,4 @@
           - "Clonación realizada con VMID: {{ new_vmid }}"
           - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
           - "Nombre del SO cambiado a: server{{ new_vmid }}"
-          - "Dirección IP de la máquina: {{ server_ip }}"
+          - "Dirección IP de la máquina: {{ vm_ip }}"

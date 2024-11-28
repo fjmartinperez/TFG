@@ -1,0 +1,27 @@
+- name: Clonar una VM desde una plantilla en Proxmox y encenderla
+  hosts: localhost
+  tasks:
+
+  - name: Obtener información de la VM clonada
+    community.general.proxmox_vm_info:
+      api_host: 192.168.0.10:8006
+      api_user: root@pam
+      api_password: 206xs75
+      validate_certs: false
+      node: "proxmox2"
+      vmid: 116
+      network: true
+    register: vm_info
+
+  - name: Obtener la dirección IP de la interfaz de red ens18
+    ansible.builtin.set_fact:
+      vm_ip: >-
+        {{
+        (vm_info.proxmox_vms[0].network
+        | selectattr('name', 'equalto', 'ens18') | list | first)['ip-addresses']
+        | selectattr('ip-address-type', 'equalto', 'ipv4') | map(attribute='ip-address') | first
+        }}
+
+  - name: Mostrar la IP de la interfaz ens18
+    ansible.builtin.debug:
+      msg: "La IP de la interfaz ens18 es: {{ vm_ip }}"
