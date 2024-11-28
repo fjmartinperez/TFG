@@ -8,21 +8,19 @@
         api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
         validate_certs: false
         node: "proxmox2"               # Nodo donde reside la plantilla
-        clone: AlmalinuxTemplate              # Nombre de la plantilla a clonar
-        vmid: 110                     # ID de la plantilla existente        
+        clone: AlmalinuxTemplate               # Nombre de la plantilla a clonar
+        vmid: 110                      # ID de la plantilla existente        
         name: newdeploy                # Nombre inicial
         storage: "nvme"                # Almacenamiento para la VM        
         full: true                     # Clonación completa
         timeout: 240                   # Tiempo de espera
-
       register: clone_result      
 
-    - name: Obtener el VMID y la IP desde el resultado
+    - name: Obtener el VMID del resultado
       set_fact:
         new_vmid: "{{ clone_result.vmid }}"
-        vm_ip: "192.168.0.{{ clone_result.vmid }}"
 
-    - name: Cambiar el nombre y la IP de la VM al finalizar
+    - name: Cambiar el nombre de la VM al finalizar
       community.general.proxmox_kvm:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
         api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
@@ -31,13 +29,6 @@
         node: "proxmox2"
         vmid: "{{ new_vmid }}"         # ID de la VM clonada
         name: "server{{ new_vmid }}"   # Nombre final basado en VMID
-        net:
-          net0: "virtio,bridge=vmbr0"  # Interfaz de red en modo bridge
-        ipconfig:
-          ipconfig0: "ip=192.168.0.{{ new_vmid }}/24,gw=192.168.0.1" # IP basada en el VMID        
-        nameservers:                   # Servidores DNS
-          - 8.8.8.8
-          - 8.8.4.4            
         update: true                   # Actualizar la configuración
         state: present
       register: update_result
@@ -56,13 +47,32 @@
       pause:
         minutes: 1
 
+    - name: Obtener la información de red de la máquina
+      community.general.proxmox_vm_info:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}" 
+        network: true       
+      register: vm_info
+
+    - name: Establecer la IP de la máquina clonada
+      set_fact:
+        server_ip: "{{ vm_info.instance.network.interfaces[0].ip_addresses[0] }}"
+
+    - name: Mostrar la información obtenida
+      debug:
+        var: vm_info
+
     - name: Cambiar el nombre de la máquina a nivel de SO
       ansible.builtin.shell: |
         hostnamectl set-hostname server{{ new_vmid }}
       vars:
         ansible_user: "{{ lookup('env', 'USERNAME') }}"
         ansible_ssh_pass: "{{ lookup('env', 'PASSWORD') }}"
-      delegate_to: "{{ vm_ip }}"
+      delegate_to: "{{ server_ip }}"
       become: yes
 
     - name: Mostrar resultados del clon, renombrado y encendido
@@ -71,4 +81,4 @@
           - "Clonación realizada con VMID: {{ new_vmid }}"
           - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
           - "Nombre del SO cambiado a: server{{ new_vmid }}"
-          - "Dirección IP de la máquina: {{ vm_ip }}"
+          - "Dirección IP de la máquina: {{ server_ip }}"
