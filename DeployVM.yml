@@ -44,7 +44,7 @@
         state: started                 # Encender la máquina
 
     - name: Esperar 1 minuto a que la VM arranque
-      pause:
+      ansible.builtin.pause:
         minutes: 1
 
     - name: Obtener la información de red de la máquina
@@ -78,24 +78,32 @@
         ansible_user: "{{ lookup('env', 'USERNAME') }}"
         ansible_pass: "{{ lookup('env', 'PASSWORD') }}"
       delegate_to: "{{ vm_ip }}"
-      become: yes
+      become: true
 
     - name: Añadir host al inventario
-      uri:
-        url: "https://192.168.0.52/api/v2/hosts/"
+      ansible.builtin.uri:
+        url: "https://192.168.0.52/api/controller/v2/hosts/"
         method: POST
         headers:
           Content-Type: "application/json"
-          Authorization: "Bearer Apos6gj82rm3WdOKfzuEDzkrzs5MJE"
-          body:
-            inventory: 3
-            name: "{{ new_vmid }}"
-            variables: |
-              ansible_host: {{ vm_ip }}
-              ansible_user: root
-              ansible_password: "{{ lookup('env', 'PASSWORD') }}"
-            body_format: json
-          delegate_to: localhost
+          Authorization: "Bearer {{ lookup('env', 'AAP25_TOKEN') }}"
+        body:
+          inventory: 3
+          name: "Server{{ vmid }}"
+          variables: |
+            ansible_host: "{{ vm_ip }}"
+        status_code: 201
+        body_format: json
+        validate_certs: false
+      delegate_to: localhost
+      register: add_host_result
+      failed_when: add_host_result.status not in [200, 201]
+
+    - name: Verificar el resultado de la adición
+      ansible.builtin.debug:
+        msg:
+          - "Host añadido correctamente al inventario"
+          - "Detalles del resultado: {{ add_host_result }}"
 
     - name: Mostrar resultados del clon, renombrado y encendido
       ansible.builtin.debug:
