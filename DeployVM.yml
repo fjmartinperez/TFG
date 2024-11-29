@@ -86,7 +86,7 @@
         method: POST
         headers:
           Content-Type: "application/json"
-          Authorization: "Bearer {{ lookup('env', 'AAP25_TOKEN') }}"
+          Authorization: "Bearer {{ lookup('env', 'API_TOKEN') }}"
         body:
           inventory: 3
           name: "Server{{ vmid }}"
