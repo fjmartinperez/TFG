@@ -89,7 +89,7 @@
           Authorization: "Bearer {{ lookup('env', 'API_TOKEN') }}"
         body:
           inventory: 3
-          name: "Server{{ vmid }}"
+          name: "Server{{ new_vmid }}"
           variables: |
             ansible_host: "{{ vm_ip }}"
         status_code: 201
