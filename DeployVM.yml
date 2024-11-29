@@ -86,7 +86,7 @@
         method: POST
         headers:
           Content-Type: "application/json"
-          Authorization: "Bearer {{ Apos6gj82rm3WdOKfzuEDzkrzs5MJE }}"
+          Authorization: "Bearer Apos6gj82rm3WdOKfzuEDzkrzs5MJE"
           body:
             inventory: 3
             name: "{{ new_vmid }}"
