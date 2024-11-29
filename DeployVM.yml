@@ -80,26 +80,22 @@
       delegate_to: "{{ vm_ip }}"
       become: yes
 
-    - name: Añadir servidor al inventario de AAP25
-      hosts: localhost
-      tasks:
-        - name: Añadir host al inventario
-          uri:
-            url: "https://192.168.0.52/api/v2/hosts/"
-            method: POST
-            headers:
-              Content-Type: "application/json"
-              Authorization: "Bearer {{ Apos6gj82rm3WdOKfzuEDzkrzs5MJE }}"
-            body:
-              inventory: 3
-              name: "{{ new_vmid }}"
-              variables: |
-                ansible_host: {{ vm_ip }}
-                ansible_user: root
-                ansible_password: "{{ lookup('env', 'PASSWORD') }}"
+    - name: Añadir host al inventario
+      uri:
+        url: "https://192.168.0.52/api/v2/hosts/"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ Apos6gj82rm3WdOKfzuEDzkrzs5MJE }}"
+          body:
+            inventory: 3
+            name: "{{ new_vmid }}"
+            variables: |
+              ansible_host: {{ vm_ip }}
+              ansible_user: root
+              ansible_password: "{{ lookup('env', 'PASSWORD') }}"
             body_format: json
           delegate_to: localhost
-
 
     - name: Mostrar resultados del clon, renombrado y encendido
       ansible.builtin.debug:
