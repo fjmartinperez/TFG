@@ -112,3 +112,4 @@
           - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
           - "Nombre del SO cambiado a: server{{ new_vmid }}"
           - "Dirección IP de la máquina: {{ vm_ip }}"
+          - "Servicenow ticket: {{ ticket_id }}"
