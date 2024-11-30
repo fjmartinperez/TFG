@@ -1,6 +1,10 @@
 - name: Clonar una VM desde una plantilla en Proxmox y encenderla
   hosts: localhost
   tasks:
+    - name: Mostrar ticket_id
+      debug:
+        msg: "Ticket ID recibido: {{ ticket_id }}"
+
     - name: Clonar VM desde plantilla
       community.general.proxmox_kvm:
         api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
