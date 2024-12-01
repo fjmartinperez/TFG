@@ -1,14 +1,15 @@
 - name: Cerrar ritm en Servicenow con notas personalizadas
   hosts: localhost
-  gather_facts: false 
+  gather_facts: false
   tasks:
     - name: Cerrar el ticket en ServiceNow
       servicenow.itsm.service_catalog:
         instance: "https://dev262465.service-now.com"  # URL de tu instancia de ServiceNow
         username: "{{ ansible_user }}"                # Usuario con permisos
         password: "{{ ansible_password }}"            # Contraseña o token
-        table: "sc_req_item"                          # Tabla de ServiceNow (RITM)
-        state: "closed_complete"                      # Cambiar el estado a cerrado
-        data:
-          work_notes: "{{ snow_notes }}"              # Notas de cierre
-        record_id: "{{ ticket_id }}"                  # ID del ticket (RITM)
+        action: update                                # Acción a realizar (actualización)
+        items:
+          - id: "{{ ticket_id }}"                     # ID del RITM
+            data:
+              state: "closed_complete"                # Cambiar el estado a cerrado
+              work_notes: "{{ snow_notes }}"          # Notas de cierre
