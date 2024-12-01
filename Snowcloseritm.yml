@@ -11,6 +11,6 @@
         table: "sc_req_item"                   # Tabla de ServiceNow (RITM)
         state: "closed_complete"               # Cambiar el estado a cerrado
         data:
-          work_notes: "{{ snow_notes }}"
+          work_notes: "{{ snow_notes }}"       # Notas de cierre
         record_id: "{{ ticket_id }}"           # ID del ticket (RITM)
       delegate_to: localhost

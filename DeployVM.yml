@@ -2,7 +2,7 @@
   hosts: localhost
   tasks:
     - name: Mostrar ticket_id
-      debug:
+      ansible.builtin.debug:
         msg: "Ticket ID recibido: {{ ticket_id }}"
 
     - name: Clonar VM desde plantilla
@@ -83,6 +83,21 @@
         ansible_pass: "{{ lookup('env', 'PASSWORD') }}"
       delegate_to: "{{ vm_ip }}"
       become: true
+    
+    - name: Generar contraseña aleatoria
+      set_fact:
+        user_password: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+
+    - name: Crear usuario en el servidor
+      ansible.builtin.user:
+        name: "server{{ new_vmid }}_user"
+        password: "{{ user_password | password_hash('sha512') }}"
+        state: present
+        shell: /bin/bash
+
+    - name: Mostrar credenciales del nuevo usuario
+      ansible.builtin.debug:
+        msg: "Usuario creado: server{{ new_vmid }}_user con contraseña: {{ user_password }}"
 
     - name: Añadir host al inventario
       ansible.builtin.uri:
@@ -117,3 +132,18 @@
           - "Nombre del SO cambiado a: server{{ new_vmid }}"
           - "Dirección IP de la máquina: {{ vm_ip }}"
           - "Servicenow ticket: {{ ticket_id }}"
+          - "Usuario creado: server{{ new_vmid }}_user con contraseña: {{ user_password }}"
+
+    - name: Generate closure notes
+      ansible.builtin.set_fact:
+        closure_notes: >
+          El servidor server{{ new_vmid }} ha sido desplegado correctamente.
+          Usuario: server{{ new_vmid }}_user
+          Contraseña: {{ server_password }}
+          Se procede al cierre automático de su petición {{ ticket_id }}
+    - name: Set ticket ID for AAP workflow
+      ansible.builtin.set_stats:
+        data:
+          ticket_id: "{{ ticket_id }}"
+          closure_notes: "{{ closure_notes }}"
+      delegate_to: localhost
