@@ -1,6 +1,6 @@
 - name: Cerrar ritm en Servicenow con notas personalizadas
   hots: localhost
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Cerrar el ticket en ServiceNow
       servicenow.itsm.now:
@@ -13,3 +13,4 @@
           work_notes: "{{ snow_notes }}"       # Notas de cierre
         record_id: "{{ ticket_id }}"           # ID del ticket (RITM)
       delegate_to: localhost
+      
