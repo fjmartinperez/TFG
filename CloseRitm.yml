@@ -4,7 +4,7 @@
   gather_facts: false
   tasks:
     - name: Cerrar el ticket en ServiceNow
-      servicenow.itsm.now:
+      servicenow.itsm:
         instance: "https://dev262465.service-now.com"  # URL de tu instancia de ServiceNow
         username: "{{ ansible_user }}"      # Usuario con permisos
         password: "{{ ansible_password }}"  # Contraseña o token
