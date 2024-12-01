@@ -1,5 +1,6 @@
+---
 - name: Cerrar ritm en Servicenow con notas personalizadas
-  hots: localhost
+  hosts: localhost
   gather_facts: false
   tasks:
     - name: Cerrar el ticket en ServiceNow
