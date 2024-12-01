@@ -1,0 +1,16 @@
+---
+- name: Cerrar ritm en Servicenow con notas personalizadas
+  hots: localhost
+  gather_facts: no
+  tasks:
+    - name: Cerrar el ticket en ServiceNow
+      servicenow.itsm.now:
+        instance: "https://dev262465.service-now.com"  # URL de tu instancia de ServiceNow
+        username: "{{ ansible_user }}"      # Usuario con permisos
+        password: "{{ ansible_password }}"  # Contraseña o token
+        table: "sc_req_item"                   # Tabla de ServiceNow (RITM)
+        state: "closed_complete"               # Cambiar el estado a cerrado
+        data:
+          work_notes: "{{ snow_notes }}"
+        record_id: "{{ ticket_id }}"           # ID del ticket (RITM)
+      delegate_to: localhost
