@@ -3,13 +3,14 @@
   gather_facts: false
   tasks:
     - name: Cerrar el ticket en ServiceNow
-      servicenow.itsm.service_catalog:
+      servicenow.itsm.api:
         instance: "https://dev262465.service-now.com"  # URL de tu instancia de ServiceNow
         username: "{{ ansible_user }}"                # Usuario con permisos
         password: "{{ ansible_password }}"            # Contraseña o token
-        action: update                                # Acción a realizar (actualización)
-        items:
-          - id: "{{ ticket_id }}"                     # ID del RITM
-            data:
-              state: "closed_complete"                # Cambiar el estado a cerrado
-              work_notes: "{{ snow_notes }}"          # Notas de cierre
+        method: PATCH                                 # Método para actualizar el registro
+        table: "sc_req_item"                          # Tabla del RITM
+        data:
+          state: "closed_complete"                   # Cambiar el estado
+          work_notes: "{{ snow_notes }}"             # Notas de cierre
+        query_params:
+          sys_id: "{{ ticket_id }}"                  # ID del ticket (RITM)
