@@ -1,4 +1,3 @@
----
 - name: Cerrar ritm en Servicenow con notas personalizadas
   hots: localhost
   gather_facts: no
