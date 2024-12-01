@@ -13,4 +13,3 @@
           work_notes: "{{ snow_notes }}"       # Notas de cierre
         record_id: "{{ ticket_id }}"           # ID del ticket (RITM)
       delegate_to: localhost
-      
