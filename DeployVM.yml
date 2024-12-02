@@ -83,9 +83,9 @@
         ansible_pass: "{{ lookup('env', 'PASSWORD') }}"
       delegate_to: "{{ vm_ip }}"
       become: true
-    
+
     - name: Generar contraseña aleatoria
-      set_fact:
+      ansible.builtin.set_fact:
         user_password: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
 
     - name: Crear usuario en el servidor
