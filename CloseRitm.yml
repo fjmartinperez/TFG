@@ -13,7 +13,7 @@
         body_format: json
         body:
           state: "3"                        # Estado correcto para "Cerrado completado"
-          work_notes: "{{ snow_notes }}"    # Notas de cierre
+          work_notes: "{{ closure_notes }}"    # Notas de cierre
       register: response
 
     - name: Verificar la respuesta de ServiceNow
