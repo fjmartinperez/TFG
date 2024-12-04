@@ -94,10 +94,20 @@
         password: "{{ user_password | password_hash('sha512') }}"
         state: present
         shell: /bin/bash
+      delegate_to: "{{ vm_ip }}"
+      become: true
 
     - name: Mostrar credenciales del nuevo usuario
       ansible.builtin.debug:
         msg: "Usuario creado: server{{ new_vmid }}_user con contraseña: {{ user_password }}"
+
+    - name: Agregar usuario al grupo ssh
+      ansible.builtin.user:
+        name: "server{{ new_vmid }}_user"
+        groups: "ssh"
+        append: true
+      delegate_to: "{{ vm_ip }}"
+      become: true
 
     - name: Añadir host al inventario
       ansible.builtin.uri:
