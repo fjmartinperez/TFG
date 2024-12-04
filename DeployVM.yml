@@ -136,7 +136,7 @@
 
     - name: Generate closure notes
       ansible.builtin.set_fact:
-        ticket_notes: >
+        ticket_notes: |
           El servidor server{{ new_vmid }} ha sido desplegado correctamente.<br>
           La dirección IP del servidor es la {{ vm_ip }}<br>
           Usuario: server{{ new_vmid }}_user<br>
