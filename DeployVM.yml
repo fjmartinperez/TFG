@@ -136,14 +136,15 @@
 
     - name: Generate closure notes
       ansible.builtin.set_fact:
-        closure_notes: >
+        ticket_notes: >
           El servidor server{{ new_vmid }} ha sido desplegado correctamente.
           Usuario: server{{ new_vmid }}_user
           Contraseña: {{ user_password }}
-          Se procede al cierre automático de su petición {{ ticket_id }}
+          Se procede al cierre automático de su petición {{ ticket_id }}.
+
     - name: Set ticket ID for AAP workflow
       ansible.builtin.set_stats:
         data:
           ticket_id: "{{ ticket_id }}"
-          closure_notes: "{{ closure_notes }}"
+          closure_notes: "{{ ticket_notes }}"
       delegate_to: localhost
