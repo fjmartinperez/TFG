@@ -141,7 +141,7 @@
           La dirección IP del servidor es la {{ vm_ip }}
           Usuario: server{{ new_vmid }}_user
           Contraseña: {{ user_password }}
-          Se procede al cierre automático de su petición {{ ticket_id }}.
+          Se procede al cierre automático de su petición.
 
     - name: Set ticket ID for AAP workflow
       ansible.builtin.set_stats:
