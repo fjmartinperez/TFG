@@ -137,11 +137,11 @@
     - name: Generate closure notes
       ansible.builtin.set_fact:
         ticket_notes: |
-          El servidor server{{ new_vmid }} ha sido desplegado correctamente.<br>
-          La dirección IP del servidor es la {{ vm_ip }}<br>
-          Usuario: server{{ new_vmid }}_user<br>
-          Contraseña: {{ user_password }}<br>
-          Se procede al cierre automático de su petición {{ ticket_id }}.<br>
+          El servidor server{{ new_vmid }} ha sido desplegado correctamente.
+          La dirección IP del servidor es la {{ vm_ip }}
+          Usuario: server{{ new_vmid }}_user
+          Contraseña: {{ user_password }}
+          Se procede al cierre automático de su petición {{ ticket_id }}.
 
     - name: Set ticket ID for AAP workflow
       ansible.builtin.set_stats:
