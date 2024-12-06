@@ -13,8 +13,8 @@
         body_format: json
         body:
           sys_class_name: "cmdb_ci_server"
-          name: "server{{ new_vmid }}"
-          ip_address: "{{ vm_ip }}"
+          name: "{{ server_name }}"
+          ip_address: "{{ server_ip }}"
           operational_status: "1" # Estado "Actovo"
           discovery_source: "AAP Automation"
           status_code: 201 # Estado correcto para la respuesta

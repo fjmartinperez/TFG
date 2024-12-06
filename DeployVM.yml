@@ -150,4 +150,6 @@
         data:
           ticket_id: "{{ ticket_id }}"
           closure_notes: "{{ ticket_notes }}"
+          server_name: "server{{ new_vmid }}"
+          server_ip: "{{ vm_ip }}"
       delegate_to: localhost
