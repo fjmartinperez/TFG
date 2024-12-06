@@ -17,10 +17,12 @@
           ip_address: "{{ server_ip }}"
           operational_status: "1" # Estado "Activo"
           discovery_source: "AAP Automation"
-          memory: "{{ server_memory }}"
-          disk: "{{ server_disk }}"
+          ram: "{{ server_memory }}"
+          disk_space: "{{ server_disk }}"
           os: "{{ server_os }}"
-          assigned_to: "{{ requester_user }}"
+          owned_by: "{{ requester_user }}"
+          managed_by: "{{ requester_user }}"
+          virtual: true
           status_code: 201 # Estado correcto para la respuesta
         validate_certs: false
 
