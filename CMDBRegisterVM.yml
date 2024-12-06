@@ -13,7 +13,7 @@
         body_format: json
         body:
           name: "server{{ new_vmid }}"
-          ip_address: "{{ server_ip }}"
+          ip_address: "{{ vm_ip }}"
           operational_status: "1" # Estado "Actovo"
           discovery_source: "AAP Automation"
           status_code: 201 # Estado correcto para la respuesta
