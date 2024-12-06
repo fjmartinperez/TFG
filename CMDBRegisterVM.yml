@@ -12,6 +12,7 @@
           Content-Type: "application/json"
         body_format: json
         body:
+          sys_class_name: "cmdb_ci_server"
           name: "server{{ new_vmid }}"
           ip_address: "{{ vm_ip }}"
           operational_status: "1" # Estado "Actovo"
