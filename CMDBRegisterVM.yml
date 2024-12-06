@@ -15,8 +15,12 @@
           sys_class_name: "cmdb_ci_server"
           name: "{{ server_name }}"
           ip_address: "{{ server_ip }}"
-          operational_status: "1" # Estado "Actovo"
+          operational_status: "1" # Estado "Activo"
           discovery_source: "AAP Automation"
+          memory: "{{ server_memory }}"
+          disk: "{{ server_disk }}"
+          os: "{{ server_os }}"
+          assigned_to: "{{ requester_user }}"
           status_code: 201 # Estado correcto para la respuesta
         validate_certs: false
 
