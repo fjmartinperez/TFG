@@ -152,7 +152,7 @@
           closure_notes: "{{ ticket_notes }}"
           server_name: "server{{ new_vmid }}"
           server_ip: "{{ vm_ip }}"
-          server_memory: "{{ vm_info.proxmox_vms[0].memory }}"
+          server_memory: "{{ (vm_info.proxmox_vms[0].maxmem / 1073741824) | round(2) }} GB"
           server_disk: "{{ vm_info.proxmox_vms[0].disk }}"
           server_os: "{{ vm_info.proxmox_vms[0].os_type }}"
           requester_user: "{{ ticket_requester }}"
