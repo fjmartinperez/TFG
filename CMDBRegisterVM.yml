@@ -17,6 +17,7 @@
           operational_status: "1" # Estado "Actovo"
           discovery_source: "AAP Automation"
           status_code: 201 # Estado correcto para la respuesta
+        validate_certs: false
 
       register: cmdb_response
       failed_when: cmdb_response.status not in [200, 201] # Estado en fallo

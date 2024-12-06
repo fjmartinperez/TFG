@@ -14,6 +14,7 @@
         body:
           state: "3"                        # Estado correcto para "Cerrado completado"
           work_notes: "{{ closure_notes }}"    # Notas de cierre
+        validate_certs: false
       register: response
 
     - name: Verificar la respuesta de ServiceNow
