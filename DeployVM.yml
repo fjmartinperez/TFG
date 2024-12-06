@@ -126,15 +126,10 @@
           - "Host añadido correctamente al inventario"
           - "Detalles del resultado: {{ add_host_result }}"
 
-    - name: Mostrar resultados del clon, renombrado y encendido
-      ansible.builtin.debug:
-        msg:
-          - "Clonación realizada con VMID: {{ new_vmid }}"
-          - "VM renombrada a nivel Proxmox: server{{ new_vmid }}"
-          - "Nombre del SO cambiado a: server{{ new_vmid }}"
-          - "Dirección IP de la máquina: {{ vm_ip }}"
-          - "Servicenow ticket: {{ ticket_id }}"
-          - "Usuario creado: server{{ new_vmid }}_user con contraseña: {{ user_password }}"
+    - name: Obtener sistema operativo del servidor
+      ansible.builtin.command: cat /etc/os-release
+      delegate_to: "{{ vm_ip }}"
+      register: os_info
 
     - name: Generate closure notes
       ansible.builtin.set_fact:
@@ -153,7 +148,7 @@
           server_name: "server{{ new_vmid }}"
           server_ip: "{{ vm_ip }}"
           server_memory: "{{ (vm_info.proxmox_vms[0].maxmem / 1073741824) | round(2) }} GB"
-          server_disk: "{{ vm_info.proxmox_vms[0].disk }}"
-          server_os: "{{ vm_info.proxmox_vms[0].os_type }}"
+          server_disk: "{{ (vm_info.proxmox_vms[0].maxdisk / 1073741824) | round(2) }} GB"
+          server_os: "{{ os_info.stdout_lines | select('match', '^PRETTY_NAME=') | first | regex_replace('^PRETTY_NAME=\"', '') | regex_replace('\"$', '') }}"
           requester_user: "{{ ticket_requester }}"
       delegate_to: localhost
