@@ -3,23 +3,25 @@
   gather_facts: false
   tasks:
     - name: Registrar el servidor en la CMDB
-      servicenow.itsm.configuration_item:        
-        instance: "dev262465"  # Nombre de tu instancia
-        username: "{{ ansible_user }}"          # Usuario de ServiceNow
-        password: "{{ ansible_password }}"      # Contraseña de ServiceNow
-        table: "cmdb_ci_server"                # Tabla de la CMDB
-        state: "present"                      # Crear o actualizar el registro        
-        sys_class_name: "cmdb_ci_server"     # Clase del CI
+      servicenow.itsm.configuration_item:
+        instance:
+          host: https://dev262465.service-now.com # Instancia
+          username: "{{ ansible_user }}"          # Usuario de ServiceNow
+          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
+        category: Hardware
+        environment: production
+        sys_class_name: cmdb_ci_server     # Clase del CI
         name: "{{ server_name }}"            # Nombre del servidor
         ip_address: "{{ server_ip }}"        # Dirección IP
-        operational_status: "1"              # Estado "Activo"
-        discovery_source: "AAP Automation"   # Fuente de descubrimiento
-        ram: "{{ server_memory }}"           # Memoria RAM
-        disk_space: "{{ server_disk }}"      # Espacio en disco
-        os: "{{ server_os }}"                # Sistema Operativo
-        owned_by: "{{ requester_user }}"     # Usuario propietario
-        managed_by: "{{ requester_user }}"   # Usuario responsable
-        virtual: true                        # Especificar que es una máquina virtual
+        operational_status: 1              # Estado "Activo"
+        other:
+          discovery_source: AAP Automation   # Fuente de descubrimiento
+          ram: "{{ server_memory }}"           # Memoria RAM
+          disk_space: "{{ server_disk }}"      # Espacio en disco
+          os: "{{ server_os }}"                # Sistema Operativo
+          owned_by: "{{ requester_user }}"     # Usuario propietario
+          managed_by: "{{ requester_user }}"   # Usuario responsable
+          virtual: true                        # Especificar que es una máquina virtual
       register: cmdb_response
 
     - name: Verificar la respuesta del registro en CMDB
