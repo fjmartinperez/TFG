@@ -9,7 +9,7 @@
           username: "{{ ansible_user }}"          # Usuario de ServiceNow
           password: "{{ ansible_password }}"      # Contraseña de ServiceNow
         state: new
-        caller: AAP_api
+        caller: AAP25_API
         short_description: Nginx problem on "{{ inventory_hostname }}"
         description: Nginx has detected a Nginx problem on "{{ inventory_hostname }}" and has activated auto-remediation
         impact: high
