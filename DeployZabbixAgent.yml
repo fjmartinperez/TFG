@@ -54,7 +54,7 @@
         state: restarted
         enabled: true
         
-     - name: Verificar el estado del agente de Zabbix
+    - name: Verificar el estado del agente de Zabbix
       ansible.builtin.service_facts:
       register: zabbix_agent_status
 
