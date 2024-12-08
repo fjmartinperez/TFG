@@ -80,3 +80,4 @@
             dns: ""
             port: "10050"
         state: present
+      delegate_to: localhost
