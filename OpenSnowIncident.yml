@@ -18,4 +18,4 @@
 
     - name: Verificar la respuesta de Sercicenow
       ansible.builtin.debug:
-        msg: "{{ cmdb_response }}"
+        msg: "{{ incident }}"
