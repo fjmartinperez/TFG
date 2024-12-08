@@ -7,6 +7,12 @@
     zabbix_package: "zabbix-agent"    # Paquete del agente
 
   tasks:
+  
+    - name: Agregar el repositorio de Zabbix
+      ansible.builtin.yum:
+        name: "{{ zabbix_repo_url }}"
+        state: present
+
     - name: Instalar el agente de Zabbix
       ansible.builtin.yum:
         name: "{{ zabbix_package }}"
