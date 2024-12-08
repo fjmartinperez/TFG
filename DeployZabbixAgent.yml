@@ -61,3 +61,22 @@
     - name: Mostrar el estado del agente
       ansible.builtin.debug:
         var: zabbix_agent_status
+
+    - name: Añadir un host a Zabbix
+      community.zabbix.zabbix_host:
+        server_url: "http://192.168.0.55/zabbix"
+        login_user: "Admin"
+        login_password: "zabbix"
+        host_name: "{{ inventory_hostname }}"
+        host_groups:
+          - "Linux servers"
+        templates:
+          - "Linux by Zabbix agent"
+        interfaces:
+          - type: 1
+            main: true
+            use_ip: true
+            ip: "{{ ansible_host }}"
+            dns: ""
+            port: "10050"
+        state: present
