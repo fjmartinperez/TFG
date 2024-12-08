@@ -70,14 +70,15 @@
         host_name: "{{ inventory_hostname }}"
         host_groups:
           - "Linux servers"
-        templates:
+        link_templates:
           - "Linux by Zabbix agent"
         interfaces:
           - type: 1
             main: true
-            use_ip: true
+            useip: 1
             ip: "{{ ansible_host }}"
             dns: ""
             port: "10050"
         state: present
+        status: enabled
       delegate_to: localhost
