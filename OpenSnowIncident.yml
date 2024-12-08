@@ -10,8 +10,8 @@
           password: "{{ ansible_password }}"      # Contraseña de ServiceNow
         state: new
         caller: AAP25_API
-        short_description: Nginx problem on "{{ inventory_hostname }}"
-        description: Nginx has detected a Nginx problem on "{{ inventory_hostname }}" and has activated auto-remediation
+        short_description: Nginx problem on "{{ target_host }}"
+        description: Nginx has detected a Nginx problem on "{{ target_host }}" and has activated auto-remediation
         impact: high
         urgency: high
       register: incident
