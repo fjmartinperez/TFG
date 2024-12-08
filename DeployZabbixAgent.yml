@@ -1,6 +1,6 @@
 ---
 - name: Configurar el agente de Zabbix en las máquinas
-  hosts: all
+  hosts: "{{ host_to_deploy }}"
   become: true
   vars:
     zabbix_server_ip: "192.168.0.55"  # IP del servidor Zabbix
