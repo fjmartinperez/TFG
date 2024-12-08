@@ -9,6 +9,13 @@
 
   tasks:
 
+    - name: Permitir el puerto 10050 en el firewall
+      ansible.posix.firewalld:
+        port: 10050/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+
     - name: Agregar el repositorio de Zabbix
       ansible.builtin.yum:
         name: "{{ zabbix_repo_url }}"
@@ -46,18 +53,11 @@
         name: zabbix-agent
         state: restarted
         enabled: true
-
-    - name: Permitir el puerto 10050 en el firewall
-      ansible.posix.firewalld:
-        port: 10050/tcp
-        permanent: true
-        state: enabled
-        immediate: true
-
-    - name: Verificar el estado del agente de Zabbix
+        
+     - name: Verificar el estado del agente de Zabbix
       ansible.builtin.service_facts:
       register: zabbix_agent_status
 
     - name: Mostrar el estado del agente
       ansible.builtin.debug:
-        var: zabbix_agent_status.ansible_facts.services['zabbix-agent']
+        var: zabbix_agent_status
