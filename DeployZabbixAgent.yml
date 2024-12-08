@@ -5,10 +5,15 @@
   vars:
     zabbix_server_ip: "192.168.0.55"  # IP del servidor Zabbix
     zabbix_repo_url: "https://repo.zabbix.com/zabbix/7.0/rhel/9/x86_64/zabbix-release-7.0-4.el9.noarch.rpm"
+    zabbix_gpg_key: "https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX-A14FE591"
     zabbix_package: "zabbix-agent"    # Paquete del agente
 
   tasks:
-
+    - name: Importar la clave GPG de Zabbix
+      ansible.builtin.rpm_key:
+        state: present
+        key: "{{ zabbix_gpg_key }}"
+        
     - name: Agregar el repositorio de Zabbix
       ansible.builtin.yum:
         name: "{{ zabbix_repo_url }}"
