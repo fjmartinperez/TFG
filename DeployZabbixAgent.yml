@@ -40,7 +40,7 @@
         enabled: true
 
     - name: Permitir el puerto 10050 en el firewall
-      ansible.builtin.firewalld:
+      ansible.posix.firewalld:
         port: 10050/tcp
         permanent: true
         state: enabled
