@@ -26,8 +26,8 @@
           host: https://dev262465.service-now.com # Instancia
           username: "{{ ansible_user }}"          # Usuario de ServiceNow
           password: "{{ ansible_password }}"      # Contraseña de ServiceNow
-
         state: closed
         number: "{{ incident.msg.record.number }}"
         close_code: "Solved (Permanently)"
         close_notes: "Solved by auto remediation"
+
