@@ -61,26 +61,3 @@
     - name: Mostrar el estado del agente
       ansible.builtin.debug:
         var: zabbix_agent_status
-
-    - name: Set credentials to access Zabbix Server API
-      ansible.builtin.set_fact:
-        ansible_user: Admin
-        ansible_httpapi_pass: zabbix
-
-    - name: Añadir un host a Zabbix
-      community.zabbix.zabbix_host:
-        host_name: "{{ inventory_hostname }}"
-        host_groups:
-          - "Linux servers"
-        link_templates:
-          - "Linux by Zabbix agent"
-        interfaces:
-          - type: 1
-            main: true
-            useip: 1
-            ip: "{{ ansible_host }}"
-            dns: ""
-            port: "10050"
-        state: present
-        status: enabled
-      delegate_to: "192.168.0.55"
