@@ -6,6 +6,10 @@
       ansible.builtin.set_fact:
         failed_servers: "{{ update_status | selectattr('status', 'eq', 'Failed') | list }}"
 
+    - name: Formatear servidores fallidos en JSON legible
+      ansible.builtin.set_fact:
+        formatted_failed_servers: "{{ failed_servers | to_nice_json }}"
+
     - name: Registrar el incidente en Servicenow
       servicenow.itsm.incident:
         instance:
@@ -18,7 +22,7 @@
         description: |
           La actualización periódica automática de los servidores Linux ha fallado.
           Detalles a revisar:
-          {{ failed_servers }}
+          {{ formatted_failed_servers }}
       register: incident
 
     - name: Verificar la respuesta de Sercicenow
