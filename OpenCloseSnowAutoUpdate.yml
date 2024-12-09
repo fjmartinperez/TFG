@@ -2,6 +2,10 @@
   hosts: localhost
   gather_facts: false
   tasks:
+    - name: Formatear detalles de actualización
+      ansible.builtin.set_fact:
+        formatted_update_status: "{{ update_status | to_nice_json }}"
+
     - name: Registrar el incidente en Servicenow
       servicenow.itsm.incident:
         instance:
@@ -10,16 +14,16 @@
           password: "{{ ansible_password }}"      # Contraseña de ServiceNow
         state: resolved
         caller: AAP25_API
-        short_description: Actualización periódica de servidores Linuc completada con éxito
+        short_description: Actualización periódica de servidores Linux completada con éxito
         description: |
           La actualización periódica automática de los servidores Linux se completó correctamente.
           Detalles:
-          {{ update_status }}
-        close_code: "Solved (Permanently)"
+          {{ formatted_update_status }}
+        close_code: AC
         close_notes: |
           La actualización periódica automática de los servidores Linux se completó correctamente.
           Detalles:
-          {{ update_status }}
+          {{ formatted_update_status }}
       register: incident
 
     - name: Verificar la respuesta de Sercicenow
