@@ -59,9 +59,11 @@
         server_log: "{{ server_log | combine({'status': 'Failed', 'error': 'Error during update or reboot process'}) }}"
       when: update_result.failed
 
-    - name: Guardar el registro del servidor en la lista general
-      ansible.builtin.set_fact:
-        update_status: "{{ update_status + [server_log] }}"
+    - name: Registrar el estado del servidor, incluso en caso de fallos
+      block:
+        - name: Guardar el registro del servidor en la lista general
+          ansible.builtin.set_fact:
+            update_status: "{{ update_status + [server_log] }}"
       always: true
 
     - name: Marcar el estado global como fallido si algún servidor falló
