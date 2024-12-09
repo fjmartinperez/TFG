@@ -74,3 +74,11 @@
         data:
           update_status: "{{ update_status }}"
           global_status: "{{ global_status }}"
+
+    - name: Depurar contenido de update_status
+      ansible.builtin.debug:
+        var: update_status
+
+    - name: Depurar contenido de failed_servers
+      ansible.builtin.debug:
+        var: global_status

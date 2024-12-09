@@ -28,3 +28,11 @@
     - name: Verificar la respuesta de Sercicenow
       ansible.builtin.debug:
         msg: "{{ incident }}"
+
+    - name: Depurar contenido de update_status
+      ansible.builtin.debug:
+        var: update_status
+
+    - name: Depurar contenido de failed_servers
+      ansible.builtin.debug:
+        var: failed_servers
