@@ -16,7 +16,7 @@
         caller: AAP25_API
         short_description: Actualización periódica de servidores Linux fallida!!!
         description: |
-          La actualización periódica automática de los servidores Linux ha fallado. 
+          La actualización periódica automática de los servidores Linux ha fallado.
           Detalles a revisar:
           {{ failed_servers }}
       register: incident
