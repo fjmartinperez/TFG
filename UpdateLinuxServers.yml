@@ -62,6 +62,7 @@
     - name: Guardar el registro del servidor en la lista general
       ansible.builtin.set_fact:
         update_status: "{{ update_status + [server_log] }}"
+      always: true
 
     - name: Marcar el estado global como fallido si algún servidor falló
       ansible.builtin.set_fact:
