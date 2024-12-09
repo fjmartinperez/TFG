@@ -31,7 +31,7 @@
     - name: Actualizar paquetes
       ansible.builtin.dnf:
         name: "*"
-        state: present
+        state: latest
         update_cache: true
       register: update_result
       failed_when: update_result.failed or update_result.results is undefined
