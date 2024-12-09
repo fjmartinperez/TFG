@@ -15,6 +15,11 @@
           La actualización periódica automática de los servidores Linux se completó correctamente.
           Detalles:
           {{ update_status }}
+        close_code: "Solved (Permanently)"
+        close_notes: |
+          La actualización periódica automática de los servidores Linux se completó correctamente.
+          Detalles:
+          {{ update_status }}
       register: incident
 
     - name: Verificar la respuesta de Sercicenow
