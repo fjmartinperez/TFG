@@ -4,7 +4,7 @@
   tasks:
     - name: Filtrar servidores fallidos
       ansible.builtin.set_fact:
-        failed_servers: "{{ ansible_stats.update_status | selectattr('status', 'eq', 'Failed') | list }}"
+        failed_servers: "{{ update_status | selectattr('status', 'eq', 'Failed') | list }}"
 
     - name: Registrar el incidente en Servicenow
       servicenow.itsm.incident:

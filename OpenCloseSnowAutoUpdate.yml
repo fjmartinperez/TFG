@@ -14,7 +14,7 @@
         description: |
           La actualización periódica automática de los servidores Linux se completó correctamente.
           Detalles:
-          {{ ansible_stats.update_status }}
+          {{ update_status }}
       register: incident
 
     - name: Verificar la respuesta de Sercicenow
