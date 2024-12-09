@@ -1,0 +1,88 @@
+---
+- name: Actualización de servidores Linux
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    update_status: []  # Variable para guardar el estado de cada servidor
+    global_status: "success"  # Estado global del playbook
+
+  tasks:
+    - name: Iniciar registro para cada servidor
+      set_fact:
+        server_log: {
+          "hostname": "{{ inventory_hostname }}",
+          "status": "Pending",
+          "actions": [],
+          "reboot_required": false,
+          "error": null
+        }
+
+    - name: Verificar conectividad con el servidor
+      ping:
+      register: ping_result
+      failed_when: ping_result.ping != "pong"
+
+    - name: Registrar estado de conectividad fallida si ocurre
+      set_fact:
+        server_log: "{{ server_log | combine({'status': 'Failed', 'error': 'No response from server'}) }}"
+      when: ping_result.ping != "pong"
+      ignore_errors: true
+
+    - name: Limpiar la caché de paquetes
+      ansible.builtin.command:
+        cmd: dnf clean all
+      register: clean_cache_result
+      failed_when: clean_cache_result.rc != 0
+      ignore_errors: true
+
+    - name: Actualizar paquetes
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+      register: update_result
+      failed_when: update_result.failed or update_result.results is undefined
+      ignore_errors: true
+
+    - name: Registrar paquetes actualizados
+      set_fact:
+        server_log: "{{ server_log | combine({'status': 'Success', 'actions': update_result.results | default([])}) }}"
+      when: not update_result.failed
+
+    - name: Verificar si se necesita reinicio
+      stat:
+        path: "/var/run/reboot-required"
+      register: reboot_check
+      failed_when: false
+
+    - name: Registrar necesidad de reinicio
+      set_fact:
+        server_log: "{{ server_log | combine({'reboot_required': reboot_check.stat.exists}) }}"
+
+    - name: Reiniciar servidor si es necesario
+      reboot:
+      when: reboot_check.stat.exists
+      ignore_errors: true
+
+    - name: Registrar error en caso de fallo
+      set_fact:
+        server_log: "{{ server_log | combine({'status': 'Failed', 'error': 'Error during update or reboot process'}) }}"
+      when: update_result.failed or clean_cache_result.rc != 0
+
+    - name: Guardar el registro del servidor en la lista general
+      set_fact:
+        update_status: "{{ update_status + [server_log] }}"
+
+    - name: Marcar el estado global como fallido si algún servidor falló
+      set_fact:
+        global_status: "failed"
+      when: server_log.status == "Failed"
+
+    - name: Registrar la variable final con el estado de todos los servidores
+      set_stats:
+        data:
+          update_status: "{{ update_status }}"
+          global_status: "{{ global_status }}"
+

@@ -30,4 +30,3 @@
         number: "{{ incident.record.number }}"
         close_code: "Solved (Permanently)"
         close_notes: "Solved by auto remediation"
-
