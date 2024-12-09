@@ -1,0 +1,26 @@
+- name: Registrar incidente en Servicenow para actualización fallida en Linux
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Filtrar servidores fallidos
+      ansible.builtin.set_fact:
+        failed_servers: "{{ ansible_stats.update_status | selectattr('status', 'eq', 'Failed') | list }}"
+
+    - name: Registrar el incidente en Servicenow
+      servicenow.itsm.incident:
+        instance:
+          host: https://dev262465.service-now.com # Instancia
+          username: "{{ ansible_user }}"          # Usuario de ServiceNow
+          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
+        state: new
+        caller: AAP25_API
+        short_description: Actualización periódica de servidores Linux fallida!!!
+        description: |
+          La actualización periódica automática de los servidores Linux ha fallado. 
+          Detalles a revisar:
+          {{ failed_servers }}
+      register: incident
+
+    - name: Verificar la respuesta de Sercicenow
+      ansible.builtin.debug:
+        msg: "{{ incident }}"

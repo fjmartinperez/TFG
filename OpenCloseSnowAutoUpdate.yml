@@ -1,0 +1,22 @@
+- name: Registrar actualización exitosa en Servicenow
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Registrar el incidente en Servicenow
+      servicenow.itsm.incident:
+        instance:
+          host: https://dev262465.service-now.com # Instancia
+          username: "{{ ansible_user }}"          # Usuario de ServiceNow
+          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
+        state: resolved
+        caller: AAP25_API
+        short_description: Actualización periódica de servidores Linuc completada con éxito
+        description: |
+          La actualización periódica automática de los servidores Linux se completó correctamente.
+          Detalles:
+          {{ ansible_stats.update_status }}
+      register: incident
+
+    - name: Verificar la respuesta de Sercicenow
+      ansible.builtin.debug:
+        msg: "{{ incident }}"
