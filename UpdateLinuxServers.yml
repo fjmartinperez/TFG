@@ -3,11 +3,10 @@
   hosts: all
   become: true
   gather_facts: true
-  any_errors_fatal: false  # Permite continuar con otros hosts en caso de fallo
+  any_errors_fatal: false  # Permite continuar con otros servidores incluso si hay errores
 
   vars:
     update_status: []  # Variable para guardar el estado de cada servidor
-    global_status: "success"  # Estado global del playbook
 
   tasks:
     - name: Iniciar registro para cada servidor
@@ -66,22 +65,19 @@
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
 
-    - name: Marcar el estado global como fallido si algún servidor falló
-      ansible.builtin.set_fact:
-        global_status: "failed"
-      when: update_status | selectattr('status', 'eq', 'Failed') | list | length > 0
+- name: Evaluar el estado global y fallar si es necesario
+  hosts: localhost
+  gather_facts: false
 
-    - name: Mostrar el contenido de update_status al final
+  tasks:
+    - name: Mostrar el contenido de update_status
       ansible.builtin.debug:
         var: update_status
 
-    - name: Fallar el playbook si hubo servidores fallidos
+    - name: Fallar si hubo servidores con errores
       ansible.builtin.fail:
         msg: "Se detectaron fallos en uno o más servidores: {{ update_status | selectattr('status', 'eq', 'Failed') | map(attribute='hostname') | list }}"
-      when: global_status == "failed"
-    
-    - name: Depurar variables
-      ansible.builtin.debug:
-        var: update_status
+      when: update_status | selectattr('status', 'eq', 'Failed') | list | length > 0
+
 
 
