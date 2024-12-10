@@ -77,7 +77,7 @@
           global_status: "{{ global_status }}"
     
     - name: Depurar variables
-      ansible.builtin.msg: |
-        - "{{ update_status }}"
-        - "{{ global_status }}"
+      ansible.builtin.debug:
+        var: update_status
+
 
