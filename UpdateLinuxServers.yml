@@ -54,33 +54,11 @@
       ansible.builtin.reboot:
       when: reboot_check.stat.exists
 
-    - name: Registrar error en caso de fallo
-      ansible.builtin.set_fact:
-        server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Error during update process')}) }}"
-      when: update_result.failed
-
-    - name: Guardar el registro del servidor en la lista general
-      block:
+    - block:
         - name: Registrar el estado del servidor
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
-      always: true
+      when: always
 
-    - name: Marcar el estado global como fallido si algún servidor falló
-      ansible.builtin.set_fact:
-        global_status: "failed"
-      when: server_log.status == "Failed"
+    - name: Marcar el
 
-    - name: Registrar la variable final con el estado de todos los servidores
-      ansible.builtin.set_stats:
-        data:
-          update_status: "{{ update_status }}"
-          global_status: "{{ global_status }}"
-
-    - name: Depurar contenido de update_status
-      ansible.builtin.debug:
-        var: update_status
-
-    - name: Depurar contenido de failed_servers
-      ansible.builtin.debug:
-        var: global_status
