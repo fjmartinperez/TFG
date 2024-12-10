@@ -1,3 +1,4 @@
+---
 - name: Actualización de servidores AlmaLinux con paso de variables
   hosts: all
   become: true
@@ -18,51 +19,46 @@
           "error": null
         }
 
-    - name: Verificar conectividad con el servidor
-      ansible.builtin.ping:
-      register: ping_result
-      failed_when: ping_result.ping != "pong"
-
-    - name: Limpiar la caché de paquetes
-      ansible.builtin.dnf:
-        update_cache: true
-
-    - name: Actualizar paquetes instalados
-      ansible.builtin.dnf:
-        name: "*"
-        state: latest
-        update_cache: true
-      register: update_result
-      failed_when: update_result.failed or update_result.results is undefined
-
-    - name: Registrar paquetes actualizados
-      ansible.builtin.set_fact:
-        server_log: "{{ server_log | combine({'status': 'Success', 'actions': update_result.results | default([])}) }}"
-      when: not update_result.failed
-
-    - name: Verificar si se necesita reinicio
-      ansible.builtin.stat:
-        path: "/var/run/reboot-required"
-      register: reboot_check
-
-    - name: Registrar necesidad de reinicio
-      ansible.builtin.set_fact:
-        server_log: "{{ server_log | combine({'reboot_required': reboot_check.stat.exists}) }}"
-
-    - name: Reiniciar servidor si es necesario
-      ansible.builtin.reboot:
-      when: reboot_check.stat.exists
-
     - block:
-        - name: Registrar el estado exitoso o en proceso del servidor
+        - name: Verificar conectividad con el servidor
+          ansible.builtin.ping:
+          register: ping_result
+          failed_when: ping_result.ping != "pong"
+
+        - name: Limpiar la caché de paquetes
+          ansible.builtin.dnf:
+            update_cache: true
+
+        - name: Actualizar paquetes instalados
+          ansible.builtin.dnf:
+            name: "*"
+            state: latest
+            update_cache: true
+          register: update_result
+          failed_when: update_result.failed or update_result.results is undefined
+
+        - name: Registrar paquetes actualizados
           ansible.builtin.set_fact:
             server_log: "{{ server_log | combine({'status': 'Success', 'actions': update_result.results | default([])}) }}"
           when: not update_result.failed
 
+        - name: Verificar si se necesita reinicio
+          ansible.builtin.stat:
+            path: "/var/run/reboot-required"
+          register: reboot_check
+
+        - name: Registrar necesidad de reinicio
+          ansible.builtin.set_fact:
+            server_log: "{{ server_log | combine({'reboot_required': reboot_check.stat.exists}) }}"
+
+        - name: Reiniciar servidor si es necesario
+          ansible.builtin.reboot:
+          when: reboot_check.stat.exists
+
       rescue:
         - name: Registrar fallo en la actualización
           ansible.builtin.set_fact:
-            server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Unknown error during update')}) }}"
+            server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Error during update or reboot process')}) }}"
 
       always:
         - name: Añadir registro del servidor a update_status
@@ -74,11 +70,14 @@
         global_status: "failed"
       when: update_status | selectattr('status', 'eq', 'Failed') | list | length > 0
 
-    - name: Registrar la variable final con el estado de todos los servidores
-      ansible.builtin.set_stats:
-        data:
-          update_status: "{{ update_status }}"
-          global_status: "{{ global_status }}"
+    - name: Mostrar el contenido de update_status al final
+      ansible.builtin.debug:
+        var: update_status
+
+    - name: Fallar el playbook si hubo servidores fallidos
+      ansible.builtin.fail:
+        msg: "Se detectaron fallos en uno o más servidores: {{ update_status | selectattr('status', 'eq', 'Failed') | map(attribute='hostname') | list }}"
+      when: global_status == "failed"
     
     - name: Depurar variables
       ansible.builtin.debug:
