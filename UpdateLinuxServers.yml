@@ -54,14 +54,18 @@
       when: reboot_check.stat.exists
 
     - block:
-        - name: Añadir registro del servidor a update_status
+        - name: Registrar el estado exitoso o en proceso del servidor
           ansible.builtin.set_fact:
-            update_status: "{{ update_status + [server_log] }}"
+            server_log: "{{ server_log | combine({'status': 'Success', 'actions': update_result.results | default([])}) }}"
+          when: not update_result.failed
+
       rescue:
         - name: Registrar fallo en la actualización
           ansible.builtin.set_fact:
-            server_log: "{{ server_log | combine({'status': 'Failed', 'error': 'Error during update or reboot process'}) }}"
-        - name: Añadir registro del fallo a update_status
+            server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Unknown error during update')}) }}"
+
+      always:
+        - name: Añadir registro del servidor a update_status
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
 
