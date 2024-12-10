@@ -1,16 +1,14 @@
 ---
-- name: Actualización de servidores AlmaLinux con paso de variables
-  hosts: all
+- name: Actualización de un servidor AlmaLinux
+  hosts: "{{ target_host }}"
   become: true
   gather_facts: true
-  any_errors_fatal: false  # Permite continuar con otros servidores incluso si hay errores
-  serial: 1  # Procesar los servidores uno por uno
 
   vars:
-    update_status: []  # Variable para guardar el estado de cada servidor
+    update_status: []  # Variable para registrar el estado del servidor
 
   tasks:
-    - name: Iniciar registro para cada servidor
+    - name: Iniciar registro del servidor
       ansible.builtin.set_fact:
         server_log: {
           "hostname": "{{ inventory_hostname }}",
@@ -61,21 +59,6 @@
           ansible.builtin.set_fact:
             server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Error during update or reboot process')}) }}"
 
-      always:
-        - name: Añadir registro del servidor a update_status
-          ansible.builtin.set_fact:
-            update_status: "{{ update_status + [server_log] }}"
-          delegate_to: localhost
-
-- name: Evaluar el estado global y fallar si es necesario
-  hosts: localhost
-  gather_facts: false
-  tasks:
-    - name: Mostrar el contenido de update_status
+    - name: Mostrar el estado del servidor
       ansible.builtin.debug:
-        var: update_status
-
-    - name: Fallar si hubo servidores con errores
-      ansible.builtin.fail:
-        msg: "Se detectaron fallos en uno o más servidores: {{ update_status | selectattr('status', 'eq', 'Failed') | map(attribute='hostname') | list }}"
-      when: update_status | selectattr('status', 'eq', 'Failed') | list | length > 0
+        var: server_log
