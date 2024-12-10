@@ -56,12 +56,12 @@
 
     - name: Registrar error en caso de fallo
       ansible.builtin.set_fact:
-        server_log: "{{ server_log | combine({'status': 'Failed', 'error': 'Error during update or reboot process'}) }}"
+        server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Error during update process')}) }}"
       when: update_result.failed
 
-    - name: Registrar el estado del servidor, incluso en caso de fallos
+    - name: Guardar el registro del servidor en la lista general
       block:
-        - name: Guardar el registro del servidor en la lista general
+        - name: Registrar el estado del servidor
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
       always: true
