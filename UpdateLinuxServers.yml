@@ -3,6 +3,7 @@
   hosts: all
   become: true
   gather_facts: true
+  any_errors_fatal: false  # Permite continuar con otros hosts en caso de fallo
 
   vars:
     update_status: []  # Variable para guardar el estado de cada servidor
