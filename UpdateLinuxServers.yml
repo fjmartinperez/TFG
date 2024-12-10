@@ -28,7 +28,7 @@
       ansible.builtin.dnf:
         update_cache: true
 
-    - name: Actualizar paquetes
+    - name: Actualizar paquetes instalados
       ansible.builtin.dnf:
         name: "*"
         state: latest
@@ -54,11 +54,21 @@
       ansible.builtin.reboot:
       when: reboot_check.stat.exists
 
-    - block:
-        - name: Registrar el estado del servidor
+    - name: Registrar el estado del servidor en la lista general
+      block:
+        - name: Añadir registro del servidor a update_status
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
-      when: always
+      when: always  # Orden corregido
 
-    - name: Marcar el
+    - name: Marcar el estado global como fallido si algún servidor falló
+      ansible.builtin.set_fact:
+        global_status: "failed"
+      when: server_log.status == "Failed"
+
+    - name: Registrar la variable final con el estado de todos los servidores
+      ansible.builtin.set_stats:
+        data:
+          update_status: "{{ update_status }}"
+          global_status: "{{ global_status }}"
 
