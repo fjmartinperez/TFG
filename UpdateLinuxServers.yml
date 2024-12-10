@@ -3,7 +3,8 @@
   hosts: all
   become: true
   gather_facts: true
-  serial: 1  # Procesar servidores uno por uno para manejar errores independientemente
+  any_errors_fatal: false  # Permite continuar con otros servidores incluso si hay errores
+  serial: 1  # Procesar los servidores uno por uno
 
   vars:
     update_status: []  # Variable para guardar el estado de cada servidor
@@ -64,11 +65,11 @@
         - name: Añadir registro del servidor a update_status
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
+          delegate_to: localhost
 
 - name: Evaluar el estado global y fallar si es necesario
   hosts: localhost
   gather_facts: false
-
   tasks:
     - name: Mostrar el contenido de update_status
       ansible.builtin.debug:
