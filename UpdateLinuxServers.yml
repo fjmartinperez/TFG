@@ -68,10 +68,16 @@
     - name: Marcar el estado global como fallido si algún servidor falló
       ansible.builtin.set_fact:
         global_status: "failed"
-      when: "'Failed' in [server.status for server in update_status]"
+      when: update_status | selectattr('status', 'eq', 'Failed') | list | length > 0
 
     - name: Registrar la variable final con el estado de todos los servidores
       ansible.builtin.set_stats:
         data:
           update_status: "{{ update_status }}"
           global_status: "{{ global_status }}"
+    
+    - name: Depurar variables
+      ansible.builtin.msg: |
+        - "{{ update_status }}"
+        - "{{ global_status }}"
+
