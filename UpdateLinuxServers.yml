@@ -3,7 +3,7 @@
   hosts: all
   become: true
   gather_facts: true
-  any_errors_fatal: false  # Permite continuar con otros servidores incluso si hay errores
+  serial: 1  # Procesar servidores uno por uno para manejar errores independientemente
 
   vars:
     update_status: []  # Variable para guardar el estado de cada servidor
@@ -78,6 +78,3 @@
       ansible.builtin.fail:
         msg: "Se detectaron fallos en uno o más servidores: {{ update_status | selectattr('status', 'eq', 'Failed') | map(attribute='hostname') | list }}"
       when: update_status | selectattr('status', 'eq', 'Failed') | list | length > 0
-
-
-
