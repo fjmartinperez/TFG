@@ -1,4 +1,3 @@
----
 - name: Actualización de servidores AlmaLinux con paso de variables
   hosts: all
   become: true
@@ -54,17 +53,22 @@
       ansible.builtin.reboot:
       when: reboot_check.stat.exists
 
-    - name: Registrar el estado del servidor en la lista general
-      block:
+    - block:
         - name: Añadir registro del servidor a update_status
           ansible.builtin.set_fact:
             update_status: "{{ update_status + [server_log] }}"
-      when: always  # Orden corregido
+      rescue:
+        - name: Registrar fallo en la actualización
+          ansible.builtin.set_fact:
+            server_log: "{{ server_log | combine({'status': 'Failed', 'error': 'Error during update or reboot process'}) }}"
+        - name: Añadir registro del fallo a update_status
+          ansible.builtin.set_fact:
+            update_status: "{{ update_status + [server_log] }}"
 
     - name: Marcar el estado global como fallido si algún servidor falló
       ansible.builtin.set_fact:
         global_status: "failed"
-      when: server_log.status == "Failed"
+      when: "'Failed' in [server.status for server in update_status]"
 
     - name: Registrar la variable final con el estado de todos los servidores
       ansible.builtin.set_stats:
