@@ -71,4 +71,3 @@
         data:
           update_status: "{{ update_status }}"
           global_status: "{{ global_status }}"
-
