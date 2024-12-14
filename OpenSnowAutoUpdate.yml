@@ -18,11 +18,7 @@
 
     - name: Registrar resultado de la actualización
       ansible.builtin.set_fact:
-        update_results: "{{ update_results + [{ 
-            'host': inventory_hostname, 
-            'status': ('success' if update_result.failed == 0 else 'failed'), 
-            'log': update_result.stdout | default('') + update_result.stderr | default('') 
-          }] }}"
+        update_results: "{{ update_results + [{ 'host': inventory_hostname, 'status': ('success' if update_result.failed == 0 else 'failed'), 'log': update_result.stdout | default('') + update_result.stderr | default('') }] }}"
 
     - name: Registrar servidores fallidos
       ansible.builtin.set_fact:
