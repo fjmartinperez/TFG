@@ -59,6 +59,6 @@
           ansible.builtin.set_fact:
             server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Error during update or reboot process')}) }}"
 
-    - name: Mostrar el estado del servidor
-      ansible.builtin.debug:
-        var: server_log
+        - name: Forzar fallo del playbook
+          ansible.builtin.fail:
+            msg: "Fallo detectado en la actualización del servidor {{ inventory_hostname }}: {{ server_log.error }}"
