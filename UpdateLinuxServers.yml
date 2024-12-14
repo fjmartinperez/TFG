@@ -1,6 +1,6 @@
 ---
 - name: Actualización de un servidor AlmaLinux
-  hosts: "{{ target_host }}"
+  hosts: all
   become: true
   gather_facts: true
 
