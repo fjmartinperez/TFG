@@ -17,19 +17,19 @@
       ignore_errors: true
 
     - name: Registrar resultado de la actualización
-      set_fact:
+      ansible.builtin.set_fact:
         update_results: "{{ update_results + [{
             'host': inventory_hostname,
             'status': ('success' if update_result.failed == 0 else 'failed'),
-            'log': update_result.stdout | default('') + update_result.stderr | default('')
+            'log': update_result.msg | default('No details available')
           }] }}"
 
-    - name: Registrar servidores fallidos con detalles
+    - name: Registrar servidores fallidos con detalles adicionales
       ansible.builtin.set_fact:
         failed_servers: "{{ failed_servers + [{
             'host': inventory_hostname,
-            'error': update_result.stderr | default('No error details available'),
-            'output': update_result.stdout | default('No output available')
+            'error': update_result.msg | default('No error message available'),
+            'module_args': update_result.invocation.module_args | default({})
           }] }}"
       when: update_result.failed > 0
 
