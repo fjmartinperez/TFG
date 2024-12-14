@@ -7,6 +7,7 @@
   vars:
     update_results: []
     failed_servers: []
+    reboot_required: false
 
   tasks:
     - name: Actualizar todos los paquetes en el servidor
@@ -32,6 +33,34 @@
             'module_args': update_result.invocation.module_args | default({})
           }] }}"
       when: update_result.failed > 0
+
+    - name: Comprobar si se requiere reinicio
+      ansible.builtin.command: needs-restarting -r
+      register: reboot_check
+      failed_when: false
+
+    - name: Establecer variable si se requiere reinicio
+      ansible.builtin.set_fact:
+        reboot_required: true
+      when: reboot_check.rc == 1
+
+    - name: Reiniciar el servidor si es necesario
+      ansible.builtin.reboot:
+        msg: "Reiniciando tras la actualización"
+        connect_timeout: 60
+        reboot_timeout: 300
+        test_command: whoami
+      when: reboot_required
+
+    - name: Registrar fallo si el servidor no volvió tras el reinicio
+      ansible.builtin.set_fact:
+        failed_servers: "{{ failed_servers + [{
+            'host': inventory_hostname,
+            'error': 'El servidor no volvió tras el reinicio',
+            'stdout': reboot_check.stdout | default(''),
+            'stderr': reboot_check.stderr | default('')
+          }] }}"
+      when: reboot_required and reboot_check.rc != 0
 
     - name: Generar estadísticas de ejecución
       ansible.builtin.set_stats:
