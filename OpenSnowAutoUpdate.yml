@@ -1,38 +1,43 @@
-- name: Registrar incidente en Servicenow para actualización fallida en Linux
-  hosts: localhost
-  gather_facts: false
+---
+- name: Actualizar servidores AlmaLinux
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    update_results: []
+    failed_servers: []
+
   tasks:
-    - name: Filtrar servidores fallidos
+    - name: Actualizar todos los paquetes en el servidor
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      register: update_result
+      ignore_errors: true
+
+    - name: Registrar resultado de la actualización
       ansible.builtin.set_fact:
-        failed_servers: "{{ update_status_global | selectattr('status', 'eq', 'Failed') | list }}"
+        update_results: "{{ update_results + [{ 
+            'host': inventory_hostname, 
+            'status': ('success' if update_result.failed == 0 else 'failed'), 
+            'log': update_result.stdout | default('') + update_result.stderr | default('') 
+          }] }}"
 
-    - name: Formatear servidores fallidos en JSON legible
+    - name: Registrar servidores fallidos
       ansible.builtin.set_fact:
-        formatted_failed_servers: "{{ failed_servers | to_nice_json }}"
+        failed_servers: "{{ failed_servers + [inventory_hostname] }}"
+      when: update_result.failed > 0
 
-    - name: Registrar el incidente en Servicenow
-      servicenow.itsm.incident:
-        instance:
-          host: https://dev262465.service-now.com # Instancia
-          username: "{{ ansible_user }}"          # Usuario de ServiceNow
-          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
-        state: new
-        caller: AAP25_API
-        short_description: Actualización periódica de servidores Linux fallida!!!
-        description: |
-          La actualización periódica automática de los servidores Linux ha fallado.
-          Detalles a revisar:
-          {{ formatted_failed_servers }}
-      register: incident
+    - name: Generar estadísticas de ejecución
+      ansible.builtin.set_stats:
+        data:
+          update_summary: "{{ update_results }}"
+          failed_servers: "{{ failed_servers }}"
 
-    - name: Verificar la respuesta de Sercicenow
-      ansible.builtin.debug:
-        msg: "{{ incident }}"
-
-    - name: Depurar contenido de update_status
-      ansible.builtin.debug:
-        var: update_status
-
-    - name: Depurar contenido de failed_servers
-      ansible.builtin.debug:
-        var: failed_servers
+    - name: Finalizar ejecución con estado failed si hubo errores
+      ansible.builtin.fail:
+        msg: >
+          Algunos servidores fallaron durante la actualización:
+          {{ failed_servers | join(', ') }}
+      when: failed_servers | length > 0
