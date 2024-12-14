@@ -1,11 +1,11 @@
 ---
-- name: Actualización de un servidor AlmaLinux
+- name: Actualización de servidores Linux
   hosts: all
   become: true
   gather_facts: true
 
   vars:
-    update_status: []  # Variable para registrar el estado del servidor
+    update_status: []  # Lista para registrar el estado de todos los servidores
 
   tasks:
     - name: Iniciar registro del servidor
@@ -59,6 +59,12 @@
           ansible.builtin.set_fact:
             server_log: "{{ server_log | combine({'status': 'Failed', 'error': update_result.msg | default('Error during update or reboot process')}) }}"
 
-        - name: Forzar fallo del playbook
-          ansible.builtin.fail:
-            msg: "Fallo detectado en la actualización del servidor {{ inventory_hostname }}: {{ server_log.error }}"
+      always:
+        - name: Añadir registro del servidor a update_status
+          ansible.builtin.set_fact:
+            update_status: "{{ update_status + [server_log] }}"
+
+    - name: Depurar contenido de update_status
+      ansible.builtin.debug:
+        var: update_status
+
