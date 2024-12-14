@@ -4,7 +4,7 @@
   tasks:
     - name: Filtrar servidores fallidos
       ansible.builtin.set_fact:
-        failed_servers: "{{ update_status_global | selectattr('status', 'eq', 'Failed') | list }}"
+        failed_servers: "{{ update_status | selectattr('status', 'eq', 'Failed') | list }}"
 
     - name: Formatear servidores fallidos en JSON legible
       ansible.builtin.set_fact:
