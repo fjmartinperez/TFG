@@ -67,4 +67,10 @@
     - name: Depurar contenido de update_status
       ansible.builtin.debug:
         var: update_status
+        
+    - name: Registrar variable global en AAP
+      ansible.builtin.set_stats:
+        data:
+        update_status_global: "{{ update_status }}"
+
 
