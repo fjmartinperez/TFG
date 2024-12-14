@@ -17,16 +17,20 @@
       ignore_errors: true
 
     - name: Registrar resultado de la actualización
-      ansible.builtin.set_fact:
-        update_results: "{{ update_results + [{ 
-            'host': inventory_hostname, 
-            'status': ('success' if update_result.failed == 0 else 'failed'), 
-            'log': update_result.stdout | default('') + update_result.stderr | default('') 
+      set_fact:
+        update_results: "{{ update_results + [{
+            'host': inventory_hostname,
+            'status': ('success' if update_result.failed == 0 else 'failed'),
+            'log': update_result.stdout | default('') + update_result.stderr | default('')
           }] }}"
 
-    - name: Registrar servidores fallidos
+    - name: Registrar servidores fallidos con detalles
       ansible.builtin.set_fact:
-        failed_servers: "{{ failed_servers + [inventory_hostname] }}"
+        failed_servers: "{{ failed_servers + [{
+            'host': inventory_hostname,
+            'error': update_result.stderr | default('No error details available'),
+            'output': update_result.stdout | default('No output available')
+          }] }}"
       when: update_result.failed > 0
 
     - name: Generar estadísticas de ejecución
@@ -38,6 +42,7 @@
     - name: Finalizar ejecución con estado failed si hubo errores
       ansible.builtin.fail:
         msg: >
-          Algunos servidores fallaron durante la actualización:
-          {{ failed_servers | join(', ') }}
+          La actualización periódica automática de los servidores Linux ha fallado.
+          Detalles a revisar:
+          {{ failed_servers | to_nice_json }}
       when: failed_servers | length > 0
