@@ -3,7 +3,7 @@
   hosts: all
   gather_facts: true
   tasks:
-    # Inicializar la lista de servidores no compliant
+    # Inicializar la lista de servidores no compliant en localhost
     - name: Initialize non-compliant servers list
       ansible.builtin.set_fact:
         non_compliant_servers: []
@@ -34,7 +34,7 @@
             firewall_status_result is succeeded
           }}
 
-    # Actualizar lista de servidores no compliant
+    # Actualizar lista de servidores no compliant en localhost
     - name: Update list of non-compliant servers
       ansible.builtin.set_fact:
         non_compliant_servers: >-
@@ -49,7 +49,6 @@
           }}
       when: not server_compliance
       delegate_to: localhost
-      run_once: true
 
     # Depurar la lista de servidores no compliant (opcional)
     - name: Debug non-compliant servers
