@@ -18,25 +18,34 @@
         enabled: true
       register: firewall_status_result
 
+    # Habilitar EPEL (para instalar rkhunter)
     - name: Enable EPEL repository
       ansible.builtin.dnf:
         name: epel-release
         state: present
 
-    # Verificar que el antivirus (chkrootkit) esté instalado
-    - name: Ensure chkrootkit is installed
+    # Verificar que rkhunter esté instalado
+    - name: Ensure rkhunter is installed
       ansible.builtin.dnf:
-        name: chkrootkit
+        name: rkhunter
         state: present
       register: antivirus_install_result
 
-    # Verificar que el antivirus esté funcionando correctamente
-    - name: Run chkrootkit scan
+    # Actualizar la base de datos de rkhunter
+    - name: Update rkhunter database
       ansible.builtin.command:
-        cmd: chkrootkit
+        cmd: rkhunter --update
+      register: antivirus_update_result
+      changed_when: false
+      failed_when: antivirus_update_result.rc != 0
+
+    # Ejecutar un escaneo rápido con rkhunter
+    - name: Run rkhunter scan
+      ansible.builtin.command:
+        cmd: rkhunter --checkall --skip-keypress
       register: antivirus_scan_result
       changed_when: false
-      failed_when: antivirus_scan_result.rc not in [0, 1]
+      failed_when: antivirus_scan_result.rc != 0
 
     # Evaluar compliance del servidor
     - name: Check compliance for the server
@@ -46,13 +55,13 @@
           - Firewall installed: {{ firewall_install_result is succeeded }}
           - Firewall active: {{ firewall_status_result is succeeded }}
           - Antivirus installed: {{ antivirus_install_result is succeeded }}
-          - Antivirus scan successful: {{ antivirus_scan_result.rc in [0, 1] }}
+          - Antivirus scan successful: {{ antivirus_scan_result.rc == 0 }}
       when: >
         not (
           firewall_install_result is succeeded and
           firewall_status_result is succeeded and
           antivirus_install_result is succeeded and
-          antivirus_scan_result.rc in [0, 1]
+          antivirus_scan_result.rc == 0
         )
 
     # Depurar estado de compliance (opcional)
@@ -63,9 +72,9 @@
           - Firewall installed: {{ firewall_install_result is succeeded }}
           - Firewall active: {{ firewall_status_result is succeeded }}
           - Antivirus installed: {{ antivirus_install_result is succeeded }}
-          - Antivirus scan successful: {{ antivirus_scan_result.rc in [0, 1] }}
+          - Antivirus scan successful: {{ antivirus_scan_result.rc == 0 }}
       when: >
         firewall_install_result is succeeded and
         firewall_status_result is succeeded and
         antivirus_install_result is succeeded and
-        antivirus_scan_result.rc in [0, 1]
+        antivirus_scan_result.rc == 0
