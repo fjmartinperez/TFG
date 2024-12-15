@@ -18,6 +18,11 @@
         enabled: true
       register: firewall_status_result
 
+    - name: Enable EPEL repository
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
     # Verificar que el antivirus (chkrootkit) esté instalado
     - name: Ensure chkrootkit is installed
       ansible.builtin.dnf:
