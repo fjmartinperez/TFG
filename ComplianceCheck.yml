@@ -23,27 +23,25 @@
         name: epel-release
         state: present
 
-    - name: Update dnf cache
+    - name: Ensure Rkhunter is installed
       ansible.builtin.dnf:
-        update_cache: true
-
-    # Instalar Chkrootkit
-    - name: Ensure Chkrootkit is installed
-      ansible.builtin.dnf:
-        name: chkrootkit
+        name: rkhunter
         state: present
 
-    # Ejecutar el escaneo de Chkrootkit
-    - name: Run Chkrootkit scan
+    - name: Update Rkhunter database
       ansible.builtin.command:
-        cmd: chkrootkit
-      register: chkrootkit_scan_result
+        cmd: rkhunter --update
       changed_when: false
 
-    # Analizar el resultado del escaneo de Chkrootkit
-    - name: Parse Chkrootkit scan result
+    - name: Run Rkhunter scan
+      ansible.builtin.command:
+        cmd: rkhunter --checkall --sk
+      register: rkhunter_scan_result
+      changed_when: false
+
+    - name: Parse Rkhunter scan result
       ansible.builtin.set_fact:
-        chkrootkit_issues: "{{ chkrootkit_scan_result.stdout | regex_findall('INFECTED') | length > 0 }}"
+        rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
     # Registrar el estado de compliance del servidor
     - name: Check compliance status
@@ -55,7 +53,7 @@
               "hostname": inventory_hostname,
               "firewall_installed": firewall_install_result is succeeded,
               "firewall_active": firewall_status_result is succeeded,
-              "chkrootkit_issues": chkrootkit_issues
+              "chkrootkit_issues": rkhunter_issues
             }]
           }}
       vars:
