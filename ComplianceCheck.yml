@@ -2,6 +2,9 @@
 - name: Compliance Check for Linux Servers
   hosts: all
   gather_facts: true
+  vars:
+    non_compliant_servers: []
+
   tasks:
     # Verificar que el firewall esté instalado
     - name: Ensure firewall is installed
@@ -9,6 +12,7 @@
         name: firewalld
         state: present
       register: firewall_install_result
+      ignore_errors: true
 
     # Verificar que el firewall esté activo
     - name: Ensure firewall is active
@@ -17,6 +21,7 @@
         state: started
         enabled: true
       register: firewall_status_result
+      ignore_errors: true
 
     # Verificar que rkhunter esté instalado
     - name: Ensure rkhunter is installed
@@ -24,43 +29,44 @@
         name: rkhunter
         state: present
       register: rkhunter_install_result
+      ignore_errors: true
 
-    # Evaluar compliance del servidor
-    - name: Fail if the server is not compliant
-      ansible.builtin.fail:
-        msg: >
-          Server {{ inventory_hostname }} is not compliant:
-          - Firewall installed: {{ firewall_install_result is succeeded }}
-          - Firewall active: {{ firewall_status_result is succeeded }}
-          - rkhunter installed: {{ rkhunter_install_result is succeeded }}
-      when: >
-        not (
-          firewall_install_result is succeeded and
-          firewall_status_result is succeeded and
-          rkhunter_install_result is succeeded
-        )
+    # Evaluar compliance del servidor y recopilar detalles si no es compliant
+    - name: Collect compliance results
+      ansible.builtin.set_fact:
+        compliance_status:
+          hostname: "{{ inventory_hostname }}"
+          firewall_installed: "{{ not firewall_install_result is failed }}"
+          firewall_active: "{{ not firewall_status_result is failed }}"
+          rkhunter_installed: "{{ not rkhunter_install_result is failed }}"
+        server_compliance: >-
+          {{
+            not firewall_install_result is failed and
+            not firewall_status_result is failed and
+            not rkhunter_install_result is failed
+          }}
+
+    # Actualizar lista de servidores no compliant
+    - name: Update non-compliant servers list
+      ansible.builtin.set_fact:
+        non_compliant_servers: "{{ non_compliant_servers + [compliance_details] }}"
+      when: not server_compliance
 
     # Depurar estado de compliance (opcional)
     - name: Debug server compliance status
       ansible.builtin.debug:
         msg: >
-          Server {{ inventory_hostname }} is compliant:
-          - Firewall installed: {{ firewall_install_result is succeeded }}
-          - Firewall active: {{ firewall_status_result is succeeded }}
-          - rkhunter installed: {{ rkhunter_install_result is succeeded }}
-      when: >
-        firewall_install_result is succeeded and
-        firewall_status_result is succeeded and
-        rkhunter_install_result is succeeded
+          Server {{ inventory_hostname }} compliance details:
+          - Firewall installed: {{ not firewall_install_result is failed }}
+          - Firewall active: {{ not firewall_status_result is failed }}
+          - rkhunter installed: {{ not rkhunter_install_result is failed }}
+          - Compliant: {{ server_compliance }}
 
-    - name: Set variable for ServiceNow
-      ansible.builtin.set_fact:
-        compliance_status: >
-          Server {{ inventory_hostname }} is compliant:
-          - Firewall installed: {{ firewall_install_result is succeeded }}
-          - Firewall active: {{ firewall_status_result is succeeded }}
-          - rkhunter installed: {{ rkhunter_install_result is succeeded }}
-      when: >
-        firewall_install_result is succeeded and
-        firewall_status_result is succeeded and
-        rkhunter_install_result is succeeded
+    # Tarea final para fallar el playbook si hay servidores no compliant
+    - name: Fail the playbook if there are non-compliant servers
+      ansible.builtin.fail:
+        msg: >
+          Compliance check failed. Non-compliant servers:
+          {{ non_compliant_servers | to_nice_json }}
+      when: non_compliant_servers | length > 0
+      run_once: true
