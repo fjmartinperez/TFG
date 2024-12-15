@@ -61,16 +61,8 @@
     - name: Debug consolidated non-compliant servers
       ansible.builtin.debug:
         msg: "{{ non_compliant_servers_global }}"
-
-    # Fallar si hay servidores no compliant
-    - name: Fail the playbook if there are non-compliant servers
-      ansible.builtin.fail:
-        msg: >
-          Compliance check failed. Non-compliant servers:
-          {{ non_compliant_servers_global | to_nice_json }}
-      when: non_compliant_servers_global | length > 0
-
-    - name: Set global variable for non-compliant servers
+    
+    - name: Set global variable for non-compliant servers (set_stats)
       ansible.builtin.set_stats:
         data:
           non_compliant_servers: "{{ non_compliant_servers_global }}"
@@ -80,3 +72,12 @@
     - name: Debug consolidated non-compliant servers
       ansible.builtin.debug:
         msg: "{{ non_compliant_servers }}"
+
+    # Fallar si hay servidores no compliant
+    - name: Fail the playbook if there are non-compliant servers
+      ansible.builtin.fail:
+        msg: >
+          Compliance check failed. Non-compliant servers:
+          {{ non_compliant_servers_global | to_nice_json }}
+      when: non_compliant_servers_global | length > 0
+
