@@ -18,26 +18,26 @@
         enabled: true
       register: firewall_status_result
 
-    # Verificar que el antivirus (chkrootkit) esté instalado
-    - name: Ensure chkrootkit is installed
+    # Verificar que rkhunter esté instalado
+    - name: Ensure rkhunter is installed
       ansible.builtin.dnf:
-        name: chkrootkit
+        name: rkhunter
         state: present
-      register: antivirus_install_result
+      register: rkhunter_install_result
 
     # Evaluar compliance del servidor
-    - name: Check compliance for the server
+    - name: Fail if the server is not compliant
       ansible.builtin.fail:
         msg: >
           Server {{ inventory_hostname }} is not compliant:
           - Firewall installed: {{ firewall_install_result is succeeded }}
           - Firewall active: {{ firewall_status_result is succeeded }}
-          - Antivirus installed: {{ antivirus_install_result is succeeded }}
+          - rkhunter installed: {{ rkhunter_install_result is succeeded }}
       when: >
         not (
           firewall_install_result is succeeded and
           firewall_status_result is succeeded and
-          antivirus_install_result is succeeded
+          rkhunter_install_result is succeeded
         )
 
     # Depurar estado de compliance (opcional)
@@ -47,8 +47,8 @@
           Server {{ inventory_hostname }} is compliant:
           - Firewall installed: {{ firewall_install_result is succeeded }}
           - Firewall active: {{ firewall_status_result is succeeded }}
-          - Antivirus installed: {{ antivirus_install_result is succeeded }}
+          - rkhunter installed: {{ rkhunter_install_result is succeeded }}
       when: >
         firewall_install_result is succeeded and
         firewall_status_result is succeeded and
-        antivirus_install_result is succeeded
+        rkhunter_install_result is succeeded
