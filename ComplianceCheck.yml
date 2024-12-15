@@ -80,3 +80,4 @@
           - Firewall activo: {{ firewall_status_result is succeeded }}
           - Rkhunter sin problemas: {{ not rkhunter_issues }}
       when: not server_compliance
+      delegate_to: localhost
