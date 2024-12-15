@@ -2,7 +2,10 @@
 - name: Compliance Check for Linux Servers
   hosts: all
   gather_facts: true
+  vars:
+    non_compliant_servers: ''
   tasks:
+
     # Verificar que el firewall esté instalado
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
@@ -61,7 +64,7 @@
     - name: Debug consolidated non-compliant servers
       ansible.builtin.debug:
         msg: "{{ non_compliant_servers_global }}"
-    
+
     - name: Set global variable for non-compliant servers (set_stats)
       ansible.builtin.set_stats:
         data:
