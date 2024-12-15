@@ -31,13 +31,16 @@
     - name: Update Rkhunter database
       ansible.builtin.command:
         cmd: rkhunter --update
+      register: rkhunter_update_result
       changed_when: false
+      failed_when: rkhunter_update_result.rc not in [0, 2]  # Acepta códigos 0 y 2
 
     - name: Run Rkhunter scan
       ansible.builtin.command:
         cmd: rkhunter --checkall --sk
       register: rkhunter_scan_result
       changed_when: false
+      failed_when: rkhunter_scan_result.rc not in [0, 1]  # Acepta códigos 0 y 1
 
     - name: Parse Rkhunter scan result
       ansible.builtin.set_fact:
