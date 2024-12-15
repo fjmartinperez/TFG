@@ -43,24 +43,29 @@
               rkhunter_install_result is succeeded
             }}
 
-    # Añadir servidores no compliant a una lista global
-    - name: Append non-compliant servers to global list
+    # Guardar información de servidores no compliant en una variable global
+    - name: Collect non-compliant servers
       ansible.builtin.set_fact:
-        non_compliant_servers_global: "{{ non_compliant_servers_global | default([]) + [compliance_status] }}"
-      when: not compliance_status.compliant
+        non_compliant_servers_partial: "{{ [compliance_status] if not compliance_status.compliant else [] }}"
 
-- name: Fail playbook if there are non-compliant servers
+- name: Consolidate non-compliant servers and fail
   hosts: localhost
+  gather_facts: false
   tasks:
-    - name: Display non-compliant servers
+    # Consolidar todos los datos desde todos los hosts
+    - name: Combine non-compliant server data
+      ansible.builtin.set_fact:
+        non_compliant_servers_global: "{{ groups['all'] | map('extract', hostvars, 'non_compliant_servers_partial') | flatten }}"
+
+    # Depurar la lista consolidada
+    - name: Debug consolidated non-compliant servers
       ansible.builtin.debug:
         msg: "{{ non_compliant_servers_global }}"
-      run_once: true
 
+    # Fallar si hay servidores no compliant
     - name: Fail the playbook if there are non-compliant servers
       ansible.builtin.fail:
         msg: >
           Compliance check failed. Non-compliant servers:
           {{ non_compliant_servers_global | to_nice_json }}
-      when: non_compliant_servers_global is defined and non_compliant_servers_global | length > 0
-      run_once: true
+      when: non_compliant_servers_global | length > 0
