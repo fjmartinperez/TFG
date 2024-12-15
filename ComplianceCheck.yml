@@ -1,8 +1,14 @@
 ---
-- name: Compliance Check for Linux Servers
+- name: Compliance Check with Firewall and Rkhunter
   hosts: all
   gather_facts: true
   tasks:
+    # Inicializar variables de compliance
+    - name: Initialize compliance variables
+      ansible.builtin.set_fact:
+        compliant_servers: []
+        non_compliant_servers: []
+
     # Verificar el firewall
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
@@ -18,6 +24,7 @@
       register: firewall_status_result
       when: not firewall_install_result.changed or firewall_install_result is succeeded
 
+    # Instalar y configurar Rkhunter
     - name: Enable EPEL repository
       ansible.builtin.dnf:
         name: epel-release
@@ -33,78 +40,31 @@
         cmd: rkhunter --update
       register: rkhunter_update_result
       changed_when: false
-      failed_when: rkhunter_update_result.rc not in [0, 2]  # Acepta códigos 0 y 2
+      failed_when: rkhunter_update_result.rc not in [0, 2]
 
     - name: Run Rkhunter scan
       ansible.builtin.command:
         cmd: rkhunter --checkall --sk
       register: rkhunter_scan_result
       changed_when: false
-      failed_when: rkhunter_scan_result.rc not in [0, 1]  # Acepta códigos 0 y 1
+      failed_when: rkhunter_scan_result.rc not in [0, 1]
 
     - name: Parse Rkhunter scan result
       ansible.builtin.set_fact:
         rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
-    # Registrar el estado de compliance del servidor
-    - name: Check compliance status
-      ansible.builtin.set_fact:
-        compliance_status: |
-          {{
-            compliance_status | default([]) +
-            [{
-              "hostname": inventory_hostname,
-              "firewall_installed": firewall_install_result is succeeded,
-              "firewall_active": firewall_status_result is succeeded,
-              "chkrootkit_issues": rkhunter_issues
-            }]
-          }}
-      vars:
-        compliance_status: []
-
-    # Generar listas de servidores compliance y no compliance
+    # Registrar estado de compliance
     - name: Generate lists of compliant and non-compliant servers
       ansible.builtin.set_fact:
-        compliant_servers: "{{ compliant_servers | default([]) + [inventory_hostname] }}"
-        non_compliant_servers: "{{ non_compliant_servers | default([]) + [inventory_hostname] }}"
+        compliant_servers: "{{ compliant_servers + [inventory_hostname] }}"
+        non_compliant_servers: "{{ non_compliant_servers + [inventory_hostname] }}"
       when:
-        - compliance_status[-1].firewall_installed
-        - compliance_status[-1].firewall_active
-        - not compliance_status[-1].chkrootkit_issues
-      vars:
-        compliant_servers: []
-        non_compliant_servers: []
+        - firewall_install_result is succeeded
+        - firewall_status_result is succeeded
+        - not rkhunter_issues
 
-    # Guardar los resultados de compliance globalmente
+    # Guardar resultados de compliance globalmente
     - name: Save compliance results globally
       ansible.builtin.set_stats:
         data:
-          compliance_results: "{{ compliance_status }}"
-          compliant_servers: "{{ compliant_servers }}"
-          non_compliant_servers: "{{ non_compliant_servers }}"
-
-    # Debug de resultados (opcional)
-    - name: Debug compliance results (Optional)
-      ansible.builtin.debug:
-        msg:
-          - "Compliant Servers: {{ compliant_servers }}"
-          - "Non-Compliant Servers: {{ non_compliant_servers }}"
-          - "Detailed Compliance Results: {{ compliance_status }}"
-
-    # Registrar el incidente en ServiceNow si hay servidores no compliance
-    - name: Registrar el incidente en ServiceNow en caso de que existan no compliance
-      servicenow.itsm.incident:
-        instance:
-          host: https://dev262465.service-now.com # Instancia
-          username: "{{ ansible_user }}"          # Usuario de ServiceNow
-          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
-        state: new
-        caller: AAP25_API
-        short_description: Revisión automática de servidores no compliance
-        description: |
-          Se encontraron servidores no compliance:
-          {{ non_compliant_servers }}
-          Detalle de las acciones realizadas:
-          {{ compliance_status }}
-      register: snow_incident
-      when: non_compliant_servers | length > 0
+          compliance_results: "{{ {'compliant_servers': compliant_servers, 'non_compliant_servers': non_compliant_servers} }}"
