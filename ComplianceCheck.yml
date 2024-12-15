@@ -3,7 +3,7 @@
   hosts: all
   gather_facts: true
   vars:
-    non_compliant_servers: []
+    non_compliant_servers: []  # Lista temporal para cada host
 
   tasks:
     - name: Ensure firewall is installed
@@ -42,23 +42,32 @@
               not rkhunter_install_result is failed
             }}
 
-    - name: Add non-compliant servers to temporary list
+    # Definir non_compliant_servers siempre, incluso si está vacío
+    - name: Add non-compliant server to temporary list
       ansible.builtin.set_fact:
-        non_compliant_servers: "{{ non_compliant_servers + [compliance_details] }}"
-      when: not compliance_details.compliant
+        non_compliant_servers: >-
+          {{ non_compliant_servers + [compliance_details] if not compliance_details.compliant else non_compliant_servers }}
 
 - name: Consolidate and fail if necessary
   hosts: localhost
   tasks:
+    - name: Ensure all hosts have non_compliant_servers defined
+      ansible.builtin.set_fact:
+        non_compliant_servers_local: "{{ hostvars[item].non_compliant_servers | default([]) }}"
+      with_items: "{{ groups['all'] }}"
+      run_once: true
+
     - name: Combine non-compliant server lists from all hosts
       ansible.builtin.set_fact:
-        all_non_compliant_servers: "{{ groups['all'] | map('extract', hostvars, 'non_compliant_servers') | flatten }}"
+        all_non_compliant_servers: "{{ all_non_compliant_servers | default([]) + non_compliant_servers_local }}"
+      with_items: "{{ groups['all'] }}"
+      run_once: true
 
     - name: Debug consolidated non-compliant servers
       ansible.builtin.debug:
         var: all_non_compliant_servers
 
-    - name: Fail if there are non-compliant servers
+    - name: Fail the playbook if there are non-compliant servers
       ansible.builtin.fail:
         msg: >
           Compliance check failed. Non-compliant servers:
