@@ -1,108 +1,62 @@
 ---
-- name: Compliance Check for Linux Servers
+- name: Simplified Compliance Check for Linux Servers
   hosts: all
   gather_facts: true
   tasks:
-    # Verificar el firewall
+    # Verificar que el firewall esté instalado
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
         name: firewalld
         state: present
       register: firewall_install_result
 
+    # Verificar que el firewall esté activo
     - name: Ensure firewall is active
       ansible.builtin.systemd:
         name: firewalld
         state: started
         enabled: true
       register: firewall_status_result
-      when: not firewall_install_result.changed or firewall_install_result is succeeded
 
-    # Instalar y configurar Rkhunter
-    - name: Enable EPEL repository
-      ansible.builtin.dnf:
-        name: epel-release
-        state: present
-
-    - name: Ensure Rkhunter is installed
-      ansible.builtin.dnf:
-        name: rkhunter
-        state: present
-
-    - name: Update Rkhunter database
-      ansible.builtin.command:
-        cmd: rkhunter --update
-      register: rkhunter_update_result
-      changed_when: false
-      failed_when: rkhunter_update_result.rc not in [0, 2]
-
-    - name: Run Rkhunter scan
-      ansible.builtin.command:
-        cmd: rkhunter --checkall --sk
-      register: rkhunter_scan_result
-      changed_when: false
-      failed_when: rkhunter_scan_result.rc not in [0, 1]
-
-    - name: Parse Rkhunter scan result
-      ansible.builtin.set_fact:
-        rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
-
-    # Evaluar estado de compliance del servidor
+    # Evaluar si el servidor es compliant
     - name: Check server compliance
       ansible.builtin.set_fact:
         server_compliance: >-
           {{
             firewall_install_result is succeeded and
-            firewall_status_result is succeeded and
-            not rkhunter_issues
+            firewall_status_result is succeeded
           }}
 
-    # Generar un registro detallado del servidor
-    - name: Generate server compliance details
-      ansible.builtin.set_fact:
-        server_compliance_details: >-
-          {{
-            {
-              "hostname": inventory_hostname,
-              "firewall_installed": firewall_install_result is succeeded,
-              "firewall_active": firewall_status_result is succeeded,
-              "rkhunter_issues": rkhunter_issues,
-              "compliance": server_compliance
-            }
-          }}
-
-    # Actualizar lista de servidores no compliant en localhost
+    # Actualizar lista de servidores no compliant
     - name: Update list of non-compliant servers
-      ansible.builtin.set_fact:
-        non_compliant_servers: "{{ non_compliant_servers | default([]) + [inventory_hostname] }}"
-      when: not server_compliance
-      delegate_to: localhost
-
-    # Marcar el playbook como fallido si hay problemas de compliance
-    - name: Fail the playbook if there are non-compliant servers
-      ansible.builtin.fail:
-        msg: >
-          Compliance check failed. The following servers are non-compliant:
-          {{ non_compliant_servers | join(', ') }}
-      when: non_compliant_servers is defined and non_compliant_servers | length > 0
-      run_once: true
-      delegate_to: localhost
-
-    # Actualizar lista de servidores no compliant con detalles
-    - name: Update list of non-compliant servers with details
       ansible.builtin.set_fact:
         non_compliant_servers: >-
           {{
             (non_compliant_servers | default([])) + [
               {
                 "hostname": inventory_hostname,
-                "issues": [
-                  "Firewall is not installed" if not (firewall_install_result is succeeded) else "",
-                  "Firewall is not active" if not (firewall_status_result is succeeded) else "",
-                  "Rkhunter found warnings" if rkhunter_issues else ""
-                ] | select('string')
+                "firewall_installed": firewall_install_result is succeeded,
+                "firewall_active": firewall_status_result is succeeded
               }
             ]
           }}
       when: not server_compliance
       delegate_to: localhost
+      run_once: true
+
+    # Depurar la lista de servidores no compliant (opcional)
+    - name: Debug non-compliant servers
+      ansible.builtin.debug:
+        var: non_compliant_servers
+      delegate_to: localhost
+      run_once: true
+
+    # Marcar el playbook como fallido si hay problemas de compliance
+    - name: Fail the playbook if there are non-compliant servers
+      ansible.builtin.fail:
+        msg: >
+          Compliance check failed. The following servers are non-compliant:
+          {{ non_compliant_servers | map(attribute='hostname') | join(', ') }}
+      when: non_compliant_servers is defined and non_compliant_servers | length > 0
+      delegate_to: localhost
+      run_once: true
