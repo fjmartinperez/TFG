@@ -53,16 +53,12 @@
       when: not server_compliance
 
     # Depurar estado de compliance (opcional)
-    - name: Debug server compliance status
+    - name: Debug non-compliant servers
       ansible.builtin.debug:
-        msg: >
-          Server {{ inventory_hostname }} compliance details:
-          - Firewall installed: {{ not firewall_install_result is failed }}
-          - Firewall active: {{ not firewall_status_result is failed }}
-          - rkhunter installed: {{ not rkhunter_install_result is failed }}
-          - Compliant: {{ server_compliance }}
+        var: non_compliant_servers
+      run_once: true
 
-    # Tarea final para fallar el playbook si hay servidores no compliant
+    # Fallar el playbook si hay servidores no compliant
     - name: Fail the playbook if there are non-compliant servers
       ansible.builtin.fail:
         msg: >
