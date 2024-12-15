@@ -18,6 +18,15 @@
       register: firewall_status_result
       when: not firewall_install_result.changed or firewall_install_result is succeeded
 
+    - name: Enable EPEL repository
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
+    - name: Update dnf cache
+      ansible.builtin.dnf:
+        update_cache: true
+
     # Instalar Chkrootkit
     - name: Ensure Chkrootkit is installed
       ansible.builtin.dnf:
