@@ -49,7 +49,7 @@
     # Actualizar lista de servidores no compliant
     - name: Update non-compliant servers list
       ansible.builtin.set_fact:
-        non_compliant_servers: "{{ non_compliant_servers + [compliance_details] }}"
+        non_compliant_servers: "{{ non_compliant_servers + [compliance_status] }}"
       when: not server_compliance
 
     # Depurar estado de compliance (opcional)
