@@ -69,8 +69,8 @@
       servicenow.itsm.incident:
         instance:
           host: https://dev262465.service-now.com # URL de tu instancia de ServiceNow
-          username: "{{ ansible_user }}"          # Usuario para autenticación
-          password: "{{ ansible_password }}"      # Contraseña para autenticación
+          username: "{{ SNOW_API.username }}"          # Usuario para autenticación
+          password: "{{ SNOW_API.password }}"      # Contraseña para autenticación
         state: new
         caller: AAP25_API
         short_description: Revisión de compliance fallida en {{ inventory_hostname }}
