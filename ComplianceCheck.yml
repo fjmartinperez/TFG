@@ -47,37 +47,62 @@
       ansible.builtin.set_fact:
         rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
-    # Depuración de valores intermedios
-    - name: Debug intermediate results
-      ansible.builtin.debug:
-        msg:
-          - "Firewall installed: {{ firewall_install_result is succeeded }}"
-          - "Firewall active: {{ firewall_status_result is succeeded }}"
-          - "Rkhunter issues: {{ rkhunter_issues }}"
-
-    # Evaluar estado del servidor
+    # Evaluar estado de compliance del servidor
     - name: Check server compliance
       ansible.builtin.set_fact:
-        server_compliance: "{{ (firewall_install_result is succeeded) and (firewall_status_result is succeeded) and (not rkhunter_issues) }}"
+        server_compliance: >-
+          {{
+            firewall_install_result is succeeded and
+            firewall_status_result is succeeded and
+            not rkhunter_issues
+          }}
 
-    - name: Debug server compliance
-      ansible.builtin.debug:
-        msg: "Server compliance status for {{ inventory_hostname }}: {{ server_compliance }}"
+    # Generar un registro detallado del servidor
+    - name: Generate server compliance details
+      ansible.builtin.set_fact:
+        server_compliance_details: >-
+          {{
+            {
+              "hostname": inventory_hostname,
+              "firewall_installed": firewall_install_result is succeeded,
+              "firewall_active": firewall_status_result is succeeded,
+              "rkhunter_issues": rkhunter_issues,
+              "compliance": server_compliance
+            }
+          }}
 
-    # Abrir incidente en ServiceNow si el servidor no es compliance
-    - name: Open ServiceNow incident if non-compliant
-      servicenow.itsm.incident:
-        instance:
-          host: https://dev262465.service-now.com # URL de tu instancia de ServiceNow
-          username: "{{ lookup('env', 'snow_username') }}"          # Usuario para autenticación
-          password: "{{ lookup('env', 'snow_password') }}"      # Contraseña para autenticación
-        state: new
-        caller: AAP25_API
-        short_description: Revisión de compliance fallida en {{ inventory_hostname }}
-        description: |
-          El servidor {{ inventory_hostname }} no cumple con los requisitos de compliance:
-          - Firewall instalado: {{ firewall_install_result is succeeded }}
-          - Firewall activo: {{ firewall_status_result is succeeded }}
-          - Rkhunter sin problemas: {{ not rkhunter_issues }}
+    # Actualizar lista de servidores no compliant en localhost
+    - name: Update list of non-compliant servers
+      ansible.builtin.set_fact:
+        non_compliant_servers: "{{ non_compliant_servers | default([]) + [inventory_hostname] }}"
+      when: not server_compliance
+      delegate_to: localhost
+
+    # Marcar el playbook como fallido si hay problemas de compliance
+    - name: Fail the playbook if there are non-compliant servers
+      ansible.builtin.fail:
+        msg: >
+          Compliance check failed. The following servers are non-compliant:
+          {{ non_compliant_servers | join(', ') }}
+      when: non_compliant_servers is defined and non_compliant_servers | length > 0
+      run_once: true
+      delegate_to: localhost
+
+    # Actualizar lista de servidores no compliant con detalles
+    - name: Update list of non-compliant servers with details
+      ansible.builtin.set_fact:
+        non_compliant_servers: >-
+          {{
+            (non_compliant_servers | default([])) + [
+              {
+                "hostname": inventory_hostname,
+                "issues": [
+                  "Firewall is not installed" if not (firewall_install_result is succeeded) else "",
+                  "Firewall is not active" if not (firewall_status_result is succeeded) else "",
+                  "Rkhunter found warnings" if rkhunter_issues else ""
+                ] | select('string')
+              }
+            ]
+          }}
       when: not server_compliance
       delegate_to: localhost
