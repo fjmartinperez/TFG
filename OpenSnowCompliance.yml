@@ -2,8 +2,6 @@
 - name: Registrar incidente en Servicenow para actualización fallida en Linux
   hosts: localhost
   gather_facts: false
-  vars:
-    non_compliant_servers: "{{ non_compliant_servers_global }}"
 
   tasks:
     - name: Depurar servidores no compliance

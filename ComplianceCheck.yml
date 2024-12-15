@@ -73,5 +73,10 @@
     - name: Set global variable for non-compliant servers
       ansible.builtin.set_stats:
         data:
-          non_compliant_servers_global: "{{ non_compliant_servers_global }}"
+          non_compliant_servers: "{{ non_compliant_servers_global }}"
         aggregate: true
+
+    # Depurar la lista consolidada
+    - name: Debug consolidated non-compliant servers
+      ansible.builtin.debug:
+        msg: "{{ non_compliant_servers }}"
