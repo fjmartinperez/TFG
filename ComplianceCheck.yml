@@ -3,6 +3,7 @@
   hosts: all
   gather_facts: true
   tasks:
+    # Verificar el firewall
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
         name: firewalld
@@ -17,29 +18,25 @@
       register: firewall_status_result
       when: not firewall_install_result.changed or firewall_install_result is succeeded
 
-    - name: Enable EPEL repository
+    # Instalar Chkrootkit
+    - name: Ensure Chkrootkit is installed
       ansible.builtin.dnf:
-        name: epel-release
+        name: chkrootkit
         state: present
 
-    - name: Update dnf cache
-      ansible.builtin.dnf:
-        update_cache: true
+    # Ejecutar el escaneo de Chkrootkit
+    - name: Run Chkrootkit scan
+      ansible.builtin.command:
+        cmd: chkrootkit
+      register: chkrootkit_scan_result
+      changed_when: false
 
-    - name: Ensure ClamAV is installed
-      ansible.builtin.dnf:
-        name: clamav
-        state: present
-      register: clamav_install_result
+    # Analizar el resultado del escaneo de Chkrootkit
+    - name: Parse Chkrootkit scan result
+      ansible.builtin.set_fact:
+        chkrootkit_issues: "{{ chkrootkit_scan_result.stdout | regex_findall('INFECTED') | length > 0 }}"
 
-    - name: Ensure ClamAV service is active
-      ansible.builtin.systemd:
-        name: clamd@scan
-        state: started
-        enabled: true
-      register: clamav_status_result
-      when: not clamav_install_result.changed or clamav_install_result is succeeded
-
+    # Registrar el estado de compliance del servidor
     - name: Check compliance status
       ansible.builtin.set_fact:
         compliance_status: |
@@ -49,26 +46,26 @@
               "hostname": inventory_hostname,
               "firewall_installed": firewall_install_result is succeeded,
               "firewall_active": firewall_status_result is succeeded,
-              "antivirus_installed": clamav_install_result is succeeded,
-              "antivirus_active": clamav_status_result is succeeded
+              "chkrootkit_issues": chkrootkit_issues
             }]
           }}
       vars:
         compliance_status: []
 
+    # Generar listas de servidores compliance y no compliance
     - name: Generate lists of compliant and non-compliant servers
       ansible.builtin.set_fact:
         compliant_servers: "{{ compliant_servers | default([]) + [inventory_hostname] }}"
         non_compliant_servers: "{{ non_compliant_servers | default([]) + [inventory_hostname] }}"
       when:
-        - compliance_status[-1].firewall_installed and
-          compliance_status[-1].firewall_active and
-          compliance_status[-1].antivirus_installed and
-          compliance_status[-1].antivirus_active
+        - compliance_status[-1].firewall_installed
+        - compliance_status[-1].firewall_active
+        - not compliance_status[-1].chkrootkit_issues
       vars:
         compliant_servers: []
         non_compliant_servers: []
 
+    # Guardar los resultados de compliance globalmente
     - name: Save compliance results globally
       ansible.builtin.set_stats:
         data:
@@ -76,6 +73,7 @@
           compliant_servers: "{{ compliant_servers }}"
           non_compliant_servers: "{{ non_compliant_servers }}"
 
+    # Debug de resultados (opcional)
     - name: Debug compliance results (Optional)
       ansible.builtin.debug:
         msg:
@@ -83,7 +81,8 @@
           - "Non-Compliant Servers: {{ non_compliant_servers }}"
           - "Detailed Compliance Results: {{ compliance_status }}"
 
-    - name: Registrar el incidente en Servicenow en caso de que existan no compliance
+    # Registrar el incidente en ServiceNow si hay servidores no compliance
+    - name: Registrar el incidente en ServiceNow en caso de que existan no compliance
       servicenow.itsm.incident:
         instance:
           host: https://dev262465.service-now.com # Instancia
@@ -93,7 +92,7 @@
         caller: AAP25_API
         short_description: Revisión automática de servidores no compliance
         description: |
-          Se encontraron servidres no compliance:
+          Se encontraron servidores no compliance:
           {{ non_compliant_servers }}
           Detalle de las acciones realizadas:
           {{ compliance_status }}
