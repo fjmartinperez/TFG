@@ -1,0 +1,21 @@
+---
+- name: Open incidents in ServiceNow for non-compliant servers
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Open incidents for each non-compliant server
+      loop: "{{ non_compliant_servers }}"
+      vars:
+        hostname: "{{ item.hostname }}"
+        issues: "{{ item.issues | join(', ') }}"
+      servicenow.itsm.incident:
+        instance:
+          host: https://dev262465.service-now.com
+          username: "{{ snow_username }}"
+          password: "{{ snow_password }}"
+        state: new
+        caller: AAP25_API
+        short_description: "Compliance issues detected on {{ hostname }}"
+        description: >
+          The following compliance issues were detected on {{ hostname }}:
+          {{ issues }}
