@@ -18,8 +18,8 @@
       servicenow.itsm.incident:
         instance:
           host: https://dev262465.service-now.com
-          username: "{{ snow_user }}"
-          password: "{{ snow_password }}"
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
         state: new
         caller: AAP25_API
         short_description: "Errores en la verificación automática de compliance"
