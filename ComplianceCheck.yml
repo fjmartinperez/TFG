@@ -1,17 +1,8 @@
 ---
-- name: Compliance Check with Firewall and Rkhunter
+- name: Compliance Check for Linux Servers
   hosts: all
   gather_facts: true
   tasks:
-    # Inicializar variables globales en localhost
-    - name: Initialize compliance variables
-      ansible.builtin.set_fact:
-        compliant_servers: []
-        non_compliant_servers: []
-        compliance_results: []
-      delegate_to: localhost
-      run_once: true  # Solo necesita ejecutarse una vez
-
     # Verificar el firewall
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
@@ -56,47 +47,25 @@
       ansible.builtin.set_fact:
         rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
-    # Evaluar estado de compliance por servidor
-    - name: Evaluate compliance for the host
-      ansible.builtin.set_fact:
-        server_compliance_status: >-
-          {{
-            {
-              "hostname": inventory_hostname,
-              "firewall_installed": firewall_install_result is succeeded,
-              "firewall_active": firewall_status_result is succeeded,
-              "rkhunter_issues": rkhunter_issues
-            }
-          }}
-
-    # Actualizar listas globales en localhost
-    - name: Update global compliance lists
-      ansible.builtin.set_fact:
-        compliant_servers: "{{ compliant_servers + [inventory_hostname] if (firewall_install_result is succeeded and firewall_status_result is succeeded and not rkhunter_issues) else compliant_servers }}"
-        non_compliant_servers: "{{ non_compliant_servers + [inventory_hostname] if not (firewall_install_result is succeeded and firewall_status_result is succeeded and not rkhunter_issues) else non_compliant_servers }}"
-        compliance_results: "{{ compliance_results + [server_compliance_status] }}"
-      delegate_to: localhost
-
-    # Guardar resultados de compliance globalmente
-    - name: Save compliance results globally
-      ansible.builtin.set_stats:
-        data:
-          compliance_results: "{{ compliance_results }}"
-          compliant_servers: "{{ compliant_servers }}"
-          non_compliant_servers: "{{ non_compliant_servers }}"
-      delegate_to: localhost
-      run_once: true
-
-    # Debug de resultados (opcional)
-    - name: Debug compliance results (Optional)
+    # Depuración de valores intermedios
+    - name: Debug intermediate results
       ansible.builtin.debug:
         msg:
-          - "Compliant Servers: {{ compliant_servers }}"
-          - "Non-Compliant Servers: {{ non_compliant_servers }}"
-          - "Detailed Compliance Results: {{ compliance_results }}"
+          - "Firewall installed: {{ firewall_install_result is succeeded }}"
+          - "Firewall active: {{ firewall_status_result is succeeded }}"
+          - "Rkhunter issues: {{ rkhunter_issues }}"
 
-    # Registrar incidente en ServiceNow si hay servidores no compliance
-    - name: Registrar el incidente en ServiceNow si hay servidores no compliance
+    # Evaluar estado del servidor
+    - name: Check server compliance
+      ansible.builtin.set_fact:
+        server_compliance: "{{ (firewall_install_result is succeeded) and (firewall_status_result is succeeded) and (not rkhunter_issues) }}"
+
+    - name: Debug server compliance
+      ansible.builtin.debug:
+        msg: "Server compliance status for {{ inventory_hostname }}: {{ server_compliance }}"
+
+    # Abrir incidente en ServiceNow si el servidor no es compliance
+    - name: Open ServiceNow incident if non-compliant
       servicenow.itsm.incident:
         instance:
           host: https://dev262465.service-now.com # URL de tu instancia de ServiceNow
@@ -104,12 +73,10 @@
           password: "{{ ansible_password }}"      # Contraseña para autenticación
         state: new
         caller: AAP25_API
-        short_description: Revisión automática de servidores no compliance
+        short_description: Revisión de compliance fallida en {{ inventory_hostname }}
         description: |
-          Se encontraron servidores no compliance:
-          {{ non_compliant_servers }}
-          Detalle de las acciones realizadas:
-          {{ compliance_results }}
-      register: snow_incident
-      when: non_compliant_servers | length > 0
-      delegate_to: localhost
+          El servidor {{ inventory_hostname }} no cumple con los requisitos de compliance:
+          - Firewall instalado: {{ firewall_install_result is succeeded }}
+          - Firewall activo: {{ firewall_status_result is succeeded }}
+          - Rkhunter sin problemas: {{ not rkhunter_issues }}
+      when: not server_compliance
