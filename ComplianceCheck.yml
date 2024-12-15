@@ -52,7 +52,6 @@
         non_compliant_servers: "{{ non_compliant_servers + [compliance_status] }}"
       when: not server_compliance
       delegate_to: localhost
-      run_once: true
 
     # Depurar estado de compliance por servidor
     - name: Debug server compliance
@@ -68,7 +67,6 @@
     - name: Debug non-compliant servers list
       ansible.builtin.debug:
         var: non_compliant_servers
-      run_once: true
       delegate_to: localhost
 
     # Fallar el playbook si hay servidores no compliant
@@ -78,5 +76,4 @@
           Compliance check failed. Non-compliant servers:
           {{ non_compliant_servers | to_nice_json }}
       when: non_compliant_servers | length > 0
-      run_once: true
       delegate_to: localhost
