@@ -3,13 +3,14 @@
   hosts: all
   gather_facts: true
   tasks:
-    # Inicializar variables de compliance en localhost
+    # Inicializar variables globales en localhost
     - name: Initialize compliance variables
       ansible.builtin.set_fact:
         compliant_servers: []
         non_compliant_servers: []
         compliance_results: []
-      run_once: true
+      delegate_to: localhost
+      run_once: true  # Solo necesita ejecutarse una vez
 
     # Verificar el firewall
     - name: Ensure firewall is installed
@@ -55,24 +56,36 @@
       ansible.builtin.set_fact:
         rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
-    # Evaluar estado de compliance
+    # Evaluar estado de compliance por servidor
+    - name: Evaluate compliance for the host
+      ansible.builtin.set_fact:
+        server_compliance_status: >-
+          {{
+            {
+              "hostname": inventory_hostname,
+              "firewall_installed": firewall_install_result is succeeded,
+              "firewall_active": firewall_status_result is succeeded,
+              "rkhunter_issues": rkhunter_issues
+            }
+          }}
+
+    # Actualizar listas globales en localhost
     - name: Update global compliance lists
       ansible.builtin.set_fact:
-        compliant_servers: "{{ compliant_servers + [inventory_hostname] }}"
-        non_compliant_servers: "{{ non_compliant_servers + [inventory_hostname] }}"
+        compliant_servers: "{{ compliant_servers + [inventory_hostname] if (firewall_install_result is succeeded and firewall_status_result is succeeded and not rkhunter_issues) else compliant_servers }}"
+        non_compliant_servers: "{{ non_compliant_servers + [inventory_hostname] if not (firewall_install_result is succeeded and firewall_status_result is succeeded and not rkhunter_issues) else non_compliant_servers }}"
+        compliance_results: "{{ compliance_results + [server_compliance_status] }}"
       delegate_to: localhost
-      when:
-        - firewall_install_result is succeeded
-        - firewall_status_result is succeeded
-        - not rkhunter_issues
 
     # Guardar resultados de compliance globalmente
     - name: Save compliance results globally
       ansible.builtin.set_stats:
         data:
-          compliance_results: "{{ {'compliant_servers': compliant_servers, 'non_compliant_servers': non_compliant_servers} }}"
+          compliance_results: "{{ compliance_results }}"
           compliant_servers: "{{ compliant_servers }}"
           non_compliant_servers: "{{ non_compliant_servers }}"
+      delegate_to: localhost
+      run_once: true
 
     # Debug de resultados (opcional)
     - name: Debug compliance results (Optional)
@@ -99,3 +112,4 @@
           {{ compliance_results }}
       register: snow_incident
       when: non_compliant_servers | length > 0
+      delegate_to: localhost
