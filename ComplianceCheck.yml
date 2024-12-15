@@ -2,6 +2,8 @@
 - name: Compliance Check for Linux Servers
   hosts: all
   gather_facts: true
+  vars:
+    non_compliant_servers: []
 
   tasks:
     # Verificar que el firewall esté instalado
@@ -29,34 +31,36 @@
       register: rkhunter_install_result
       ignore_errors: true
 
-    # Evaluar compliance del servidor y recopilar detalles
+    # Evaluar compliance del servidor
     - name: Collect compliance results
       ansible.builtin.set_fact:
-        compliance_status:
+        server_compliance:
           hostname: "{{ inventory_hostname }}"
           firewall_installed: "{{ not firewall_install_result is failed }}"
           firewall_active: "{{ not firewall_status_result is failed }}"
           rkhunter_installed: "{{ not rkhunter_install_result is failed }}"
-        server_compliance: >-
+        server_is_compliant: >-
           {{
             not firewall_install_result is failed and
             not firewall_status_result is failed and
             not rkhunter_install_result is failed
           }}
 
-    # Actualizar lista global de servidores no compliance
-    - name: Update non-compliant servers globally
+    # Agregar servidores no compliant a una lista temporal
+    - name: Add non-compliant server to temporary list
+      ansible.builtin.set_fact:
+        non_compliant_servers: "{{ non_compliant_servers + [server_compliance] }}"
+      when: not server_is_compliant
+
+    # Consolidar lista global de servidores no compliant
+    - name: Consolidate non-compliant servers globally
       ansible.builtin.set_stats:
         data:
-          non_compliant_servers_global: >-
-            {{
-              (non_compliant_servers_global | default([])) + [compliance_status]
-            }}
-      when: not server_compliance
+          non_compliant_servers_global: "{{ non_compliant_servers }}"
       run_once: true
 
-    # Depurar lista de servidores no compliance
-    - name: Debug non-compliant servers list
+    # Depurar la lista consolidada
+    - name: Debug consolidated non-compliant servers list
       ansible.builtin.debug:
         var: non_compliant_servers_global
       run_once: true
