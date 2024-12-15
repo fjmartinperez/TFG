@@ -6,11 +6,11 @@
   tasks:
     - name: Depurar servidores no compliance
       ansible.builtin.debug:
-        var: non_compliant_servers
+        var: non_compliant_servers_global
 
     - name: Formatear servidores fallidos en JSON legible
       ansible.builtin.set_fact:
-        formatted_non_compliant_servers: "{{ non_compliant_servers | to_nice_json }}"
+        formatted_non_compliant_servers: "{{ non_compliant_servers_global | to_nice_json }}"
 
     - name: Registrar el incidente en Servicenow
       servicenow.itsm.incident:
