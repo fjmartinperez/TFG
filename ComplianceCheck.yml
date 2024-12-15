@@ -69,3 +69,9 @@
           Compliance check failed. Non-compliant servers:
           {{ non_compliant_servers_global | to_nice_json }}
       when: non_compliant_servers_global | length > 0
+
+    - name: Set global variable for non-compliant servers
+      ansible.builtin.set_stats:
+        data:
+          non_compliant_servers_global: "{{ non_compliant_servers_global }}"
+        aggregate: true
