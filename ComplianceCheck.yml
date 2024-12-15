@@ -31,7 +31,7 @@
       register: rkhunter_install_result
       ignore_errors: true
 
-    # Evaluar compliance del servidor y recopilar detalles si no es compliant
+    # Evaluar compliance del servidor y recopilar detalles
     - name: Collect compliance results
       ansible.builtin.set_fact:
         compliance_status:
@@ -46,17 +46,30 @@
             not rkhunter_install_result is failed
           }}
 
+    # Depurar estado de compliance por servidor
+    - name: Debug server compliance
+      ansible.builtin.debug:
+        msg: >
+          Server {{ inventory_hostname }} compliance details:
+          - Firewall installed: {{ not firewall_install_result is failed }}
+          - Firewall active: {{ not firewall_status_result is failed }}
+          - rkhunter installed: {{ not rkhunter_install_result is failed }}
+          - Compliant: {{ server_compliance }}
+
     # Actualizar lista de servidores no compliant
     - name: Update non-compliant servers list
       ansible.builtin.set_fact:
         non_compliant_servers: "{{ non_compliant_servers + [compliance_status] }}"
       when: not server_compliance
+      run_once: true
+      delegate_to: localhost
 
-    # Depurar estado de compliance (opcional)
-    - name: Debug non-compliant servers
+    # Depurar lista de servidores no compliant (opcional)
+    - name: Debug non-compliant servers list
       ansible.builtin.debug:
         var: non_compliant_servers
       run_once: true
+      delegate_to: localhost
 
     # Fallar el playbook si hay servidores no compliant
     - name: Fail the playbook if there are non-compliant servers
@@ -66,3 +79,4 @@
           {{ non_compliant_servers | to_nice_json }}
       when: non_compliant_servers | length > 0
       run_once: true
+      delegate_to: localhost
