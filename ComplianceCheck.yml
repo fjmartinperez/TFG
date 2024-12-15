@@ -17,6 +17,15 @@
       register: firewall_status_result
       when: not firewall_install_result.changed or firewall_install_result is succeeded
 
+    - name: Enable EPEL repository
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
+    - name: Update dnf cache
+      ansible.builtin.dnf:
+        update_cache: true
+
     - name: Ensure ClamAV is installed
       ansible.builtin.dnf:
         name: clamav
@@ -88,5 +97,5 @@
           {{ non_compliant_servers }}
           Detalle de las acciones realizadas:
           {{ compliance_status }}
-      register: incident
+      register: snow_incident
       when: non_compliant_servers | length > 0
