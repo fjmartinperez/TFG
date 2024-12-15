@@ -3,6 +3,13 @@
   hosts: all
   gather_facts: true
   tasks:
+    # Inicializar la lista de servidores no compliant
+    - name: Initialize non-compliant servers list
+      ansible.builtin.set_fact:
+        non_compliant_servers: []
+      delegate_to: localhost
+      run_once: true
+
     # Verificar que el firewall esté instalado
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
