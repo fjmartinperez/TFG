@@ -1,15 +1,8 @@
 ---
-- name: Simplified Compliance Check for Linux Servers
+- name: Compliance Check for Linux Servers
   hosts: all
   gather_facts: true
   tasks:
-    # Inicializar la lista de servidores no compliant en localhost
-    - name: Initialize non-compliant servers list
-      ansible.builtin.set_fact:
-        non_compliant_servers: []
-      delegate_to: localhost
-      run_once: true
-
     # Verificar que el firewall esté instalado
     - name: Ensure firewall is installed
       ansible.builtin.dnf:
@@ -25,44 +18,49 @@
         enabled: true
       register: firewall_status_result
 
-    # Evaluar si el servidor es compliant
-    - name: Check server compliance
-      ansible.builtin.set_fact:
-        server_compliance: >-
-          {{
-            firewall_install_result is succeeded and
-            firewall_status_result is succeeded
-          }}
+    # Verificar que el antivirus (chkrootkit) esté instalado
+    - name: Ensure chkrootkit is installed
+      ansible.builtin.dnf:
+        name: chkrootkit
+        state: present
+      register: antivirus_install_result
 
-    # Actualizar lista de servidores no compliant en localhost
-    - name: Update list of non-compliant servers
-      ansible.builtin.set_fact:
-        non_compliant_servers: >-
-          {{
-            (non_compliant_servers | default([])) + [
-              {
-                "hostname": inventory_hostname,
-                "firewall_installed": firewall_install_result is succeeded,
-                "firewall_active": firewall_status_result is succeeded
-              }
-            ]
-          }}
-      when: not server_compliance
-      delegate_to: localhost
+    # Verificar que el antivirus esté funcionando correctamente
+    - name: Run chkrootkit scan
+      ansible.builtin.command:
+        cmd: chkrootkit
+      register: antivirus_scan_result
+      changed_when: false
+      failed_when: antivirus_scan_result.rc not in [0, 1]
 
-    # Depurar la lista de servidores no compliant (opcional)
-    - name: Debug non-compliant servers
-      ansible.builtin.debug:
-        var: non_compliant_servers
-      delegate_to: localhost
-      run_once: true
-
-    # Marcar el playbook como fallido si hay problemas de compliance
-    - name: Fail the playbook if there are non-compliant servers
+    # Evaluar compliance del servidor
+    - name: Check compliance for the server
       ansible.builtin.fail:
         msg: >
-          Compliance check failed. The following servers are non-compliant:
-          {{ non_compliant_servers | map(attribute='hostname') | join(', ') }}
-      when: non_compliant_servers is defined and non_compliant_servers | length > 0
-      delegate_to: localhost
-      run_once: true
+          Server {{ inventory_hostname }} is not compliant:
+          - Firewall installed: {{ firewall_install_result is succeeded }}
+          - Firewall active: {{ firewall_status_result is succeeded }}
+          - Antivirus installed: {{ antivirus_install_result is succeeded }}
+          - Antivirus scan successful: {{ antivirus_scan_result.rc in [0, 1] }}
+      when: >
+        not (
+          firewall_install_result is succeeded and
+          firewall_status_result is succeeded and
+          antivirus_install_result is succeeded and
+          antivirus_scan_result.rc in [0, 1]
+        )
+
+    # Depurar estado de compliance (opcional)
+    - name: Debug server compliance status
+      ansible.builtin.debug:
+        msg: >
+          Server {{ inventory_hostname }} is compliant:
+          - Firewall installed: {{ firewall_install_result is succeeded }}
+          - Firewall active: {{ firewall_status_result is succeeded }}
+          - Antivirus installed: {{ antivirus_install_result is succeeded }}
+          - Antivirus scan successful: {{ antivirus_scan_result.rc in [0, 1] }}
+      when: >
+        firewall_install_result is succeeded and
+        firewall_status_result is succeeded and
+        antivirus_install_result is succeeded and
+        antivirus_scan_result.rc in [0, 1]
