@@ -6,9 +6,9 @@
     # Inicializar variables de compliance
     - name: Initialize compliance variables
       ansible.builtin.set_fact:
-        compliant_servers: []
-        non_compliant_servers: []
-        compliance_results: []
+        compliant_servers: "{{ compliant_servers | default([]) }}"
+        non_compliant_servers: "{{ non_compliant_servers | default([]) }}"
+      run_once: true  # Solo necesita ejecutarse una vez
 
     # Verificar el firewall
     - name: Ensure firewall is installed
@@ -54,8 +54,21 @@
       ansible.builtin.set_fact:
         rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
-    # Registrar estado de compliance
-    - name: Generate lists of compliant and non-compliant servers
+    # Evaluar estado de compliance
+    - name: Determine compliance status
+      ansible.builtin.set_fact:
+        server_compliance_status: >-
+          {{
+            {
+              "hostname": inventory_hostname,
+              "firewall_installed": firewall_install_result is succeeded,
+              "firewall_active": firewall_status_result is succeeded,
+              "rkhunter_issues": rkhunter_issues
+            }
+          }}
+
+    # Actualizar listas de compliance globalmente
+    - name: Update compliance lists
       ansible.builtin.set_fact:
         compliant_servers: "{{ compliant_servers + [inventory_hostname] }}"
         non_compliant_servers: "{{ non_compliant_servers + [inventory_hostname] }}"
@@ -63,12 +76,15 @@
         - firewall_install_result is succeeded
         - firewall_status_result is succeeded
         - not rkhunter_issues
+      delegate_to: localhost  # Garantiza que las variables globales se actualicen centralmente
 
     # Guardar resultados de compliance globalmente
     - name: Save compliance results globally
       ansible.builtin.set_stats:
         data:
           compliance_results: "{{ {'compliant_servers': compliant_servers, 'non_compliant_servers': non_compliant_servers} }}"
+          compliant_servers: "{{ compliant_servers }}"
+          non_compliant_servers: "{{ non_compliant_servers }}"
 
     # Debug de resultados (opcional)
     - name: Debug compliance results (Optional)
