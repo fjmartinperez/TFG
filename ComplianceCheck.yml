@@ -68,3 +68,29 @@
       ansible.builtin.set_stats:
         data:
           compliance_results: "{{ {'compliant_servers': compliant_servers, 'non_compliant_servers': non_compliant_servers} }}"
+
+    # Debug de resultados (opcional)
+    - name: Debug compliance results (Optional)
+      ansible.builtin.debug:
+        msg:
+          - "Compliant Servers: {{ compliant_servers }}"
+          - "Non-Compliant Servers: {{ non_compliant_servers }}"
+          - "Detailed Compliance Results: {{ compliance_results }}"
+
+    # Registrar incidente en ServiceNow si hay servidores no compliance
+    - name: Registrar el incidente en ServiceNow si hay servidores no compliance
+      servicenow.itsm.incident:
+        instance:
+          host: https://dev262465.service-now.com # URL de tu instancia de ServiceNow
+          username: "{{ ansible_user }}"          # Usuario para autenticación
+          password: "{{ ansible_password }}"      # Contraseña para autenticación
+        state: new
+        caller: AAP25_API
+        short_description: Revisión automática de servidores no compliance
+        description: |
+          Se encontraron servidores no compliance:
+          {{ non_compliant_servers }}
+          Detalle de las acciones realizadas:
+          {{ compliance_results }}
+      register: snow_incident
+      when: non_compliant_servers | length > 0
