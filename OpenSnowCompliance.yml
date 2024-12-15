@@ -1,21 +1,31 @@
----
-- name: Open incidents in ServiceNow for non-compliant servers
+- name: Registrar incidente en Servicenow para actualización fallida en Linux
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Open incidents for each non-compliant server
-      loop: "{{ non_compliant_servers }}"
-      vars:
-        hostname: "{{ item.hostname }}"
-        issues: "{{ item.issues | join(', ') }}"
+
+    - name: Formatear servidores fallidos en JSON legible
+      ansible.builtin.set_fact:
+        formatted_compliance: "{{ compliance_status | to_nice_json }}"
+
+    - name: Registrar el incidente en Servicenow
       servicenow.itsm.incident:
         instance:
-          host: https://dev262465.service-now.com
-          username: "{{ snow_username }}"
-          password: "{{ snow_password }}"
+          host: https://dev262465.service-now.com # Instancia
+          username: "{{ ansible_user }}"          # Usuario de ServiceNow
+          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
         state: new
         caller: AAP25_API
-        short_description: "Compliance issues detected on {{ hostname }}"
-        description: >
-          The following compliance issues were detected on {{ hostname }}:
-          {{ issues }}
+        short_description: Errores en la verificación automatica de compliance!!!
+        description: |
+          Existen servidores no compliance en la verificación automática.
+          Detalles a revisar:
+          {{ formatted_compliance }}
+      register: incident
+
+    - name: Verificar la respuesta de Sercicenow
+      ansible.builtin.debug:
+        msg: "{{ incident }}"
+
+    - name: Depurar contenido de compliance_status
+      ansible.builtin.debug:
+        var: compliance_status

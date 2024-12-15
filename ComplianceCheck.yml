@@ -52,3 +52,15 @@
         firewall_install_result is succeeded and
         firewall_status_result is succeeded and
         rkhunter_install_result is succeeded
+
+    - name: Set variable for ServiceNow
+      ansible.builtin.set_fact:
+        compliance_status: >
+          Server {{ inventory_hostname }} is compliant:
+          - Firewall installed: {{ firewall_install_result is succeeded }}
+          - Firewall active: {{ firewall_status_result is succeeded }}
+          - rkhunter installed: {{ rkhunter_install_result is succeeded }}
+      when: >
+        firewall_install_result is succeeded and
+        firewall_status_result is succeeded and
+        rkhunter_install_result is succeeded
