@@ -3,12 +3,12 @@
   hosts: all
   gather_facts: true
   tasks:
-    # Inicializar variables de compliance
+    # Inicializar variables de compliance en localhost
     - name: Initialize compliance variables
       ansible.builtin.set_fact:
-        compliant_servers: "{{ compliant_servers | default([]) }}"
-        non_compliant_servers: "{{ non_compliant_servers | default([]) }}"
-      run_once: true  # Solo necesita ejecutarse una vez
+        compliant_servers: []
+        non_compliant_servers: []
+      run_once: true
 
     # Verificar el firewall
     - name: Ensure firewall is installed
@@ -55,28 +55,15 @@
         rkhunter_issues: "{{ rkhunter_scan_result.stdout | regex_findall('Warning') | length > 0 }}"
 
     # Evaluar estado de compliance
-    - name: Determine compliance status
-      ansible.builtin.set_fact:
-        server_compliance_status: >-
-          {{
-            {
-              "hostname": inventory_hostname,
-              "firewall_installed": firewall_install_result is succeeded,
-              "firewall_active": firewall_status_result is succeeded,
-              "rkhunter_issues": rkhunter_issues
-            }
-          }}
-
-    # Actualizar listas de compliance globalmente
-    - name: Update compliance lists
+    - name: Update global compliance lists
       ansible.builtin.set_fact:
         compliant_servers: "{{ compliant_servers + [inventory_hostname] }}"
         non_compliant_servers: "{{ non_compliant_servers + [inventory_hostname] }}"
+      delegate_to: localhost
       when:
         - firewall_install_result is succeeded
         - firewall_status_result is succeeded
         - not rkhunter_issues
-      delegate_to: localhost  # Garantiza que las variables globales se actualicen centralmente
 
     # Guardar resultados de compliance globalmente
     - name: Save compliance results globally
