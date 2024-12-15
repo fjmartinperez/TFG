@@ -77,3 +77,8 @@
           {{ non_compliant_servers | to_nice_json }}
       when: non_compliant_servers | length > 0
       delegate_to: localhost
+
+    - name: Save non-compliant servers globally
+      ansible.builtin.set_stats:
+        data:
+          non_compliant_servers_global: "{{ non_compliant_servers }}"
