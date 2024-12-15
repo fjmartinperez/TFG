@@ -8,6 +8,7 @@
       ansible.builtin.set_fact:
         compliant_servers: []
         non_compliant_servers: []
+        compliance_results: []
       run_once: true
 
     # Verificar el firewall
