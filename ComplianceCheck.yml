@@ -46,6 +46,14 @@
             not rkhunter_install_result is failed
           }}
 
+    # Actualizar lista de servidores no compliant
+    - name: Update non-compliant servers list
+      ansible.builtin.set_fact:
+        non_compliant_servers: "{{ non_compliant_servers + [compliance_status] }}"
+      when: not server_compliance
+      delegate_to: localhost
+      run_once: true
+
     # Depurar estado de compliance por servidor
     - name: Debug server compliance
       ansible.builtin.debug:
@@ -55,14 +63,6 @@
           - Firewall active: {{ not firewall_status_result is failed }}
           - rkhunter installed: {{ not rkhunter_install_result is failed }}
           - Compliant: {{ server_compliance }}
-
-    # Actualizar lista de servidores no compliant
-    - name: Update non-compliant servers list
-      ansible.builtin.set_fact:
-        non_compliant_servers: "{{ non_compliant_servers + [compliance_status] }}"
-      when: not server_compliance
-      run_once: true
-      delegate_to: localhost
 
     # Depurar lista de servidores no compliant (opcional)
     - name: Debug non-compliant servers list
