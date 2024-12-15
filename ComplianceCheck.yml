@@ -32,19 +32,19 @@
     # Evaluar compliance del servidor y recopilar detalles
     - name: Collect compliance results
       ansible.builtin.set_fact:
+        compliance_status:
+          hostname: "{{ inventory_hostname }}"
+          firewall_installed: "{{ not firewall_install_result is failed }}"
+          firewall_active: "{{ not firewall_status_result is failed }}"
+          rkhunter_installed: "{{ not rkhunter_install_result is failed }}"
         server_compliance: >-
           {{
             not firewall_install_result is failed and
             not firewall_status_result is failed and
             not rkhunter_install_result is failed
           }}
-        compliance_status:
-          hostname: "{{ inventory_hostname }}"
-          firewall_installed: "{{ not firewall_install_result is failed }}"
-          firewall_active: "{{ not firewall_status_result is failed }}"
-          rkhunter_installed: "{{ not rkhunter_install_result is failed }}"
 
-    # Enviar los servidores no compliant a la lista global
+    # Actualizar lista global de servidores no compliance
     - name: Update non-compliant servers globally
       ansible.builtin.set_stats:
         data:
@@ -53,13 +53,13 @@
               (non_compliant_servers_global | default([])) + [compliance_status]
             }}
       when: not server_compliance
+      run_once: true
 
-    # Depurar lista de servidores no compliant
+    # Depurar lista de servidores no compliance
     - name: Debug non-compliant servers list
       ansible.builtin.debug:
         var: non_compliant_servers_global
       run_once: true
-      delegate_to: localhost
 
     # Fallar el playbook si hay servidores no compliant
     - name: Fail the playbook if there are non-compliant servers
@@ -69,4 +69,3 @@
           {{ non_compliant_servers_global | to_nice_json }}
       when: non_compliant_servers_global is defined and non_compliant_servers_global | length > 0
       run_once: true
-      delegate_to: localhost
