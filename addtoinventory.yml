@@ -1,0 +1,23 @@
+- name: Añadir servidor al inventario de AAP25
+  hosts: localhost
+  tasks:
+    - name: Añadir host al inventario
+      ansible.builtin.uri:
+        url: "https://192.168.0.52/api/controller/v2/hosts/"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer Apos6gj82rm3WdOKfzuEDzkrzs5MJE"
+        body:
+          inventory: 3
+          name: "Server106"
+          variables: |
+            ansible_host: 192.168.0.1
+            ansible_user: root
+            ansible_password: 206xs75
+        status_code: 201
+        body_format: json
+        validate_certs: false
+      delegate_to: localhost
+      register: add_host_result
+      failed_when: add_host_result.status not in [200, 201]

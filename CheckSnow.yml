@@ -1,22 +1,22 @@
 ---
 - name: Test connection to ServiceNow
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   vars:
     servicenow_instance: "https://dev262465.service-now.com"
-  
+
   tasks:
     - name: Check ServiceNow connection
-      uri:
+      ansible.builtin.uri:
         url: "{{ servicenow_instance }}/api/now/table/incident"
         method: GET
-        user: "{{ lookup('ansible.builtin.env', 'SERVICENOW_USERNAME') }}"
-        password: "{{ lookup('ansible.builtin.env', 'SERVICENOW_PASSWORD') }}"
-        force_basic_auth: yes
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        force_basic_auth: true
         status_code: 200
-        validate_certs: no
+        validate_certs: false
       register: servicenow_response
 
     - name: Show response
-      debug:
+      ansible.builtin.debug:
         var: servicenow_response

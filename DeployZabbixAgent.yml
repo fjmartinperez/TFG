@@ -1,0 +1,63 @@
+---
+- name: Configurar el agente de Zabbix en las máquinas
+  hosts: "{{ host_to_deploy }}"
+  become: true
+  vars:
+    zabbix_server_ip: "192.168.0.55"  # IP del servidor Zabbix
+    zabbix_repo_url: "https://repo.zabbix.com/zabbix/7.0/rhel/9/x86_64/zabbix-release-7.0-4.el9.noarch.rpm"    
+    zabbix_package: "zabbix-agent"    # Paquete del agente
+
+  tasks:
+
+    - name: Permitir el puerto 10050 en el firewall
+      ansible.posix.firewalld:
+        port: 10050/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+
+    - name: Agregar el repositorio de Zabbix
+      ansible.builtin.yum:
+        name: "{{ zabbix_repo_url }}"
+        state: present
+        disable_gpg_check: true
+
+    - name: Instalar el agente de Zabbix
+      ansible.builtin.yum:
+        name: "{{ zabbix_package }}"
+        state: present
+
+    - name: Configurar el archivo zabbix_agentd.conf
+      ansible.builtin.lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Server='
+        line: "Server={{ zabbix_server_ip }}"
+        state: present
+
+    - name: Configurar el archivo zabbix_agentd.conf para ServerActive
+      ansible.builtin.lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^ServerActive='
+        line: "ServerActive={{ zabbix_server_ip }}"
+        state: present
+
+    - name: Configurar el archivo zabbix_agentd.conf para el Hostname
+      ansible.builtin.lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^Hostname='
+        line: "Hostname={{ inventory_hostname }}"
+        state: present
+
+    - name: Reiniciar el servicio de Zabbix Agent
+      ansible.builtin.systemd:
+        name: zabbix-agent
+        state: restarted
+        enabled: true
+        
+    - name: Verificar el estado del agente de Zabbix
+      ansible.builtin.service_facts:
+      register: zabbix_agent_status
+
+    - name: Mostrar el estado del agente
+      ansible.builtin.debug:
+        var: zabbix_agent_status

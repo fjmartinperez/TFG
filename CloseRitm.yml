@@ -1,0 +1,22 @@
+- name: Cerrar RITM en ServiceNow con el módulo URI
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Cerrar el ticket en ServiceNow
+      ansible.builtin.uri:
+        url: "https://dev262465.service-now.com/api/now/table/sc_req_item/{{ ticket_id }}"
+        method: PATCH
+        user: "{{ ansible_user }}"          # Usuario de ServiceNow
+        password: "{{ ansible_password }}"  # Contraseña de ServiceNow
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          state: "3"                        # Estado correcto para "Cerrado completado"
+          work_notes: "{{ closure_notes }}"    # Notas de cierre
+        validate_certs: false
+      register: response
+
+    - name: Verificar la respuesta de ServiceNow
+      ansible.builtin.debug:
+        var: response

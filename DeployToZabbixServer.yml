@@ -1,0 +1,33 @@
+---
+- name: Añadir hosts a Zabbix
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Añadir host a Zabbix
+      community.zabbix.zabbix_host:
+        host_name: "{{ item.name }}"
+        host_groups:
+          - "{{ item.group }}"
+        link_templates:
+          - "{{ item.template }}"
+        interfaces:
+          - type: 1
+            main: true
+            useip: 1
+            ip: "{{ item.ip }}"
+            dns: ""
+            port: "10050"
+        state: present
+        status: enabled
+        force: true
+      loop: "{{ zabbix_hosts }}"
+      vars:
+        zabbix_hosts:
+          - name: "Server113"
+            ip: "192.168.0.140"
+            group: "Linux servers"
+            template: "Linux by Zabbix agent"
+          - name: "Server117"
+            ip: "192.168.0.141"
+            group: "Linux servers"
+            template: "Linux by Zabbix agent"

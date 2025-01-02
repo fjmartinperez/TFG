@@ -1,0 +1,34 @@
+- name: Registrar host en la CMDB de ServiceNow
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Cerrar el ticket en ServiceNow
+      ansible.builtin.uri:
+        url: "https://dev262465.service-now.com/api/now/table/cmdb_ci"
+        method: POST
+        user: "{{ ansible_user }}"          # Usuario de ServiceNow
+        password: "{{ ansible_password }}"  # Contraseña de ServiceNow
+        headers:
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          sys_class_name: "cmdb_ci_server"
+          name: "{{ server_name }}"
+          ip_address: "{{ server_ip }}"
+          operational_status: "1" # Estado "Activo"
+          discovery_source: "AAP Automation"
+          ram: "{{ server_memory }}"
+          disk_space: "{{ server_disk }}"
+          os: "{{ server_os }}"
+          owned_by: "{{ requester_user }}"
+          managed_by: "{{ requester_user }}"
+          virtual: true
+          status_code: 201 # Estado correcto para la respuesta
+        validate_certs: false
+
+      register: cmdb_response
+      failed_when: cmdb_response.status not in [200, 201] # Estado en fallo
+
+    - name: Verificar la respuesta del registro en CMDB
+      ansible.builtin.debug:
+        msg: "Registro en la CMDB completado con éxito: {{ cmdb_response }}"

@@ -1,0 +1,154 @@
+- name: Clonar una VM desde una plantilla en Proxmox y encenderla
+  hosts: localhost
+  tasks:
+    - name: Mostrar ticket_id
+      ansible.builtin.debug:
+        msg: "Ticket ID recibido: {{ ticket_id }}"
+
+    - name: Clonar VM desde plantilla
+      community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        clone: AlmalinuxTemplate
+        vmid: 110
+        name: newdeploy
+        storage: "nvme"
+        full: true
+        timeout: 240
+      register: clone_result
+
+    - name: Obtener el VMID del resultado
+      ansible.builtin.set_fact:
+        new_vmid: "{{ clone_result.vmid }}"
+
+    - name: Cambiar el nombre de la VM al finalizar
+      community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}"         # ID de la VM clonada
+        name: "server{{ new_vmid }}"   # Nombre final basado en VMID
+        update: true                   # Actualizar la configuración
+        state: present
+      register: update_result
+
+    - name: Encender la máquina virtual
+      community.general.proxmox_kvm:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}"         # ID de la VM clonada
+        state: started                 # Encender la máquina
+
+    - name: Esperar 1 minuto a que la VM arranque
+      ansible.builtin.pause:
+        minutes: 1
+
+    - name: Obtener la información de red de la máquina
+      community.general.proxmox_vm_info:
+        api_host: "{{ lookup('env', 'PROXMOX_API_HOST') }}"
+        api_user: "{{ lookup('env', 'PROXMOX_API_USER') }}"
+        api_password: "{{ lookup('env', 'PROXMOX_API_PASSWORD') }}"
+        validate_certs: false
+        node: "proxmox2"
+        vmid: "{{ new_vmid }}"
+        network: true
+      register: vm_info
+
+    - name: Obtener la dirección IP de la interfaz de red ens18
+      ansible.builtin.set_fact:
+        vm_ip: >-
+          {{
+          (vm_info.proxmox_vms[0].network
+          | selectattr('name', 'equalto', 'ens18') | list | first)['ip-addresses']
+          | selectattr('ip-address-type', 'equalto', 'ipv4') | map(attribute='ip-address') | first
+          }}
+
+    - name: Mostrar la información obtenida
+      ansible.builtin.debug:
+        var: vm_info
+
+    - name: Cambiar el nombre de la máquina a nivel de SO
+      ansible.builtin.shell: |
+        hostnamectl set-hostname server{{ new_vmid }}
+      vars:
+        ansible_user: "{{ lookup('env', 'USERNAME') }}"
+        ansible_pass: "{{ lookup('env', 'PASSWORD') }}"
+      delegate_to: "{{ vm_ip }}"
+      become: true
+
+    - name: Generar contraseña aleatoria
+      ansible.builtin.set_fact:
+        user_password: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+
+    - name: Crear usuario en el servidor
+      ansible.builtin.user:
+        name: "server{{ new_vmid }}_user"
+        password: "{{ user_password | password_hash('sha512') }}"
+        state: present
+        shell: /bin/bash
+      delegate_to: "{{ vm_ip }}"
+      become: true
+
+    - name: Mostrar credenciales del nuevo usuario
+      ansible.builtin.debug:
+        msg: "Usuario creado: server{{ new_vmid }}_user con contraseña: {{ user_password }}"
+
+    - name: Añadir host al inventario
+      ansible.builtin.uri:
+        url: "https://192.168.0.52/api/controller/v2/hosts/"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ lookup('env', 'API_TOKEN') }}"
+        body:
+          inventory: 3
+          name: "Server{{ new_vmid }}"
+          variables: |
+            ansible_host: "{{ vm_ip }}"
+        status_code: 201
+        body_format: json
+        validate_certs: false
+      delegate_to: localhost
+      register: add_host_result
+      failed_when: add_host_result.status not in [200, 201]
+
+    - name: Verificar el resultado de la adición
+      ansible.builtin.debug:
+        msg:
+          - "Host añadido correctamente al inventario"
+          - "Detalles del resultado: {{ add_host_result }}"
+
+    - name: Obtener sistema operativo del servidor
+      ansible.builtin.command: cat /etc/os-release
+      delegate_to: "{{ vm_ip }}"
+      register: os_info
+
+    - name: Generate closure notes
+      ansible.builtin.set_fact:
+        ticket_notes: |
+          El servidor server{{ new_vmid }} ha sido desplegado correctamente.
+          La dirección IP del servidor es la {{ vm_ip }}
+          Usuario: server{{ new_vmid }}_user
+          Contraseña: {{ user_password }}
+          Se procede al cierre automático de su petición.
+
+    - name: Set ticket ID for AAP workflow
+      ansible.builtin.set_stats:
+        data:
+          ticket_id: "{{ ticket_id }}"
+          closure_notes: "{{ ticket_notes }}"
+          server_name: "server{{ new_vmid }}"
+          server_ip: "{{ vm_ip }}"
+          server_memory: "{{ (vm_info.proxmox_vms[0].maxmem / 1073741824) | round(2) }} GB"
+          server_disk: "{{ (vm_info.proxmox_vms[0].maxdisk / 1073741824) | round(2) }} GB"
+          server_os: "{{ os_info.stdout_lines | select('match', '^PRETTY_NAME=') | first | regex_replace('^PRETTY_NAME=\"', '') | regex_replace('\"$', '') }}"
+          requester_user: "{{ ticket_requester }}"
+      delegate_to: localhost

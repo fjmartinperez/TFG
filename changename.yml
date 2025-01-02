@@ -1,0 +1,12 @@
+- name: Clonar una VM desde una plantilla en Proxmox y encenderla
+  hosts: localhost
+  tasks:
+
+  - name: Cambiar el nombre de la máquina a nivel de SO
+    ansible.builtin.shell: |
+      hostnamectl set-hostname server113
+      vars:
+        ansible_user: root
+        ansible_pass: 206xs75
+      delegate_to: 192.168.0.177
+      become: yes

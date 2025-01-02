@@ -1,0 +1,9 @@
+---
+- name: Autorremediación para Nginx
+  hosts: "{{ target_host }}"
+  become: yes
+  tasks:
+    - name: Asegurar estado de Nginx
+      service:
+        name: nginx
+        state: started

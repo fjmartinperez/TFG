@@ -1,0 +1,32 @@
+- name: Registrar incidente en Servicenow
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Registrar el incidente en Servicenow
+      servicenow.itsm.incident:
+        instance:
+          host: https://dev262465.service-now.com # Instancia
+          username: "{{ ansible_user }}"          # Usuario de ServiceNow
+          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
+        state: new
+        caller: AAP25_API
+        short_description: Nginx problem on "{{ target_host }}"
+        description: Nginx has detected a Nginx problem on "{{ target_host }}" and has activated auto-remediation
+        impact: high
+        urgency: high
+      register: incident
+
+    - name: Verificar la respuesta de Sercicenow
+      ansible.builtin.debug:
+        msg: "{{ incident }}"
+
+    - name: Close incident
+      servicenow.itsm.incident:
+        instance:
+          host: https://dev262465.service-now.com # Instancia
+          username: "{{ ansible_user }}"          # Usuario de ServiceNow
+          password: "{{ ansible_password }}"      # Contraseña de ServiceNow
+        state: closed
+        number: "{{ incident.record.number }}"
+        close_code: "Solved (Permanently)"
+        close_notes: "Solved by auto remediation"
